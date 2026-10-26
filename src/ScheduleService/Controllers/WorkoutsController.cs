@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using ScheduleService.Contracts;
 using ScheduleService.Infrastructure;
 using ScheduleService.Services;
@@ -8,7 +8,6 @@ namespace ScheduleService.Controllers;
 /// <summary>Розклад тренувань. Маршрути й відповіді збігаються з моноліту.</summary>
 [ApiController]
 [Route("api/workouts")]
-[Produces("application/json")]
 public class WorkoutsController(IWorkoutService workouts) : ApiControllerBase
 {
     /// <summary>Список тренувань, відсортований за часом.</summary>

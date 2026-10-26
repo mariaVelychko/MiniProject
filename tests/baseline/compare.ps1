@@ -14,7 +14,7 @@ param(
 $ErrorActionPreference = "Stop"
 $utf8 = New-Object System.Text.UTF8Encoding($false)
 
-function Read([string]$p) { if (Test-Path $p) { [IO.File]::ReadAllText($p).Trim() } else { "<немає файлу>" } }
+function Read([string]$p) { if (Test-Path $p) { [regex]::Replace([IO.File]::ReadAllText($p).Trim(), '(?<=\p{L} )(?!999999)\d+(?=\s)', '<n>') } else { "<немає файлу>" } }
 
 $names = Get-ChildItem $Before -Filter *.status | ForEach-Object { $_.BaseName } | Sort-Object
 $rows = @()
