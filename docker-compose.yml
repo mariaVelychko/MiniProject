@@ -1,0 +1,75 @@
+# Усе (MySQL + Auth + Catalog + Monolith + Schedule + Gateway) однією командою:  docker compose up --build
+# Потрібен файл .env (див. .env.example): MYSQL_ROOT_PASSWORD і JWT_KEY.
+name: miniproject
+
+x-service: &service
+  restart: unless-stopped
+  depends_on:
+    mysql:
+      condition: service_healthy
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?задайте MYSQL_ROOT_PASSWORD у .env}
+    ports: ["3307:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  auth:
+    <<: *service
+    build: { context: ., args: { PROJECT: AuthService, DLL: AuthService.dll } }
+    environment:
+      ASPNETCORE_URLS: http://+:5001
+      ConnectionStrings__AuthDb: server=mysql;port=3306;database=miniproject_auth;user=root;password=${MYSQL_ROOT_PASSWORD}
+      Jwt__Key: ${JWT_KEY:?задайте JWT_KEY у .env}
+    ports: ["5001:5001"]
+
+  catalog:
+    <<: *service
+    build: { context: ., args: { PROJECT: CatalogService, DLL: CatalogService.dll } }
+    environment:
+      ASPNETCORE_URLS: http://+:5002
+      ConnectionStrings__CatalogDb: server=mysql;port=3306;database=miniproject_catalog;user=root;password=${MYSQL_ROOT_PASSWORD}
+      Jwt__Key: ${JWT_KEY:?задайте JWT_KEY у .env}
+    ports: ["5002:5002"]
+
+  monolith:
+    <<: *service
+    build: { context: ., args: { PROJECT: Monolith, DLL: SportClub.Api.dll } }
+    environment:
+      ASPNETCORE_URLS: http://+:5100
+      ConnectionStrings__SportClub: server=mysql;port=3306;database=sportclub_cs;user=root;password=${MYSQL_ROOT_PASSWORD}
+      Catalog__BaseUrl: http://catalog:5002
+      Schedule__BaseUrl: http://schedule:5102
+    ports: ["5100:5100"]
+
+  schedule:
+    <<: *service
+    build: { context: ., args: { PROJECT: ScheduleService, DLL: ScheduleService.dll } }
+    environment:
+      ASPNETCORE_URLS: http://+:5102
+      ConnectionStrings__ScheduleDb: server=mysql;port=3306;database=miniproject_schedule;user=root;password=${MYSQL_ROOT_PASSWORD}
+      Services__Catalog__BaseUrl: http://catalog:5002
+      Services__Users__BaseUrl: http://monolith:5100
+    ports: ["5102:5102"]
+
+  gateway:
+    build: { context: ., args: { PROJECT: ApiGateway, DLL: ApiGateway.dll } }
+    restart: unless-stopped
+    depends_on: [auth, catalog, monolith, schedule]
+    environment:
+      ASPNETCORE_URLS: http://+:5000
+      Services__Auth__Host: auth
+      Services__Catalog__Host: catalog
+      Services__Monolith__Host: monolith
+      Services__Schedule__Host: schedule
+    ports: ["5000:5000"]
+
+volumes:
+  mysql-data:
