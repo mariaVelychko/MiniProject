@@ -27,7 +27,7 @@ public sealed class IdempotencyFilter(
     private static readonly SemaphoreSlim[] Gates =
         Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
 
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -81,7 +81,7 @@ public sealed class IdempotencyFilter(
             if (executed.Exception is null && executed.Result is ObjectResult { StatusCode: >= 200 and < 300 } ok)
             {
                 string? location = executed.Result is CreatedAtActionResult created
-                    ? urls.GetUrlHelper(context).Action(created.ActionName, created.ControllerName, created.RouteValues)
+                    ? urls.GetUrlHelper(context).Action(created.ActionName, created.ControllerName, created.RouteValues, http.Request.Scheme, http.Request.Host.ToString())
                     : null;
 
                 await store.SaveAsync(new IdempotencyRecord
