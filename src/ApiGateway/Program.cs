@@ -1,8 +1,11 @@
+using System.Diagnostics;
+using ApiGateway.Infrastructure;
+using ApiGateway.Screens;
+using ApiGateway.Setup;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
-using System.Diagnostics;
 
-const string CorrelationHeader = "X-Correlation-Id";
+const string CorrelationHeader = Correlation.Header;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.SetBasePath(builder.Environment.ContentRootPath).AddOcelot();
@@ -46,10 +49,17 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyHeader().AllowAnyMethod().WithExposedHeaders(CorrelationHeader)));
 builder.Services.AddOcelot(builder.Configuration);
 
+// ЛР3: складений ендпоінт, кеш, ліміти, таймаути (GatewayServices), перевірка JWT на шлюзі та Swagger.
+builder.Services.AddGateway(builder.Configuration);
+builder.Services.AddGatewayAuthentication();
+builder.Services.AddGatewaySwagger();
+
 var app = builder.Build();
 var log = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Gateway");
 
 app.UseCors();
+
+// Кореляційний id + журнал запиту. Токени й тіла запитів у журнал не потрапляють.
 app.Use(async (context, next) =>
 {
     var correlationId = context.Request.Headers[CorrelationHeader].FirstOrDefault();
@@ -70,8 +80,32 @@ app.Use(async (context, next) =>
         context.Request.Method, path, context.Items.DownstreamRequest()?.ToUri() ?? "gateway",
         context.Response.StatusCode, timer.ElapsedMilliseconds, correlationId);
 });
-app.Map("/health", branch => branch.Run(context =>
-    context.Response.WriteAsJsonAsync(new { status = "ok", service = "ApiGateway" })));
 
-await app.UseOcelot();
+app.UseExceptionHandler();
+
+app.UseSwagger();
+app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "ApiGateway v1"));
+
+app.UseRouting();
+app.UseAuthentication();     // токен перевіряється один раз, тут
+app.UseRateLimiter();        // після автентифікації: авторизованих рахуємо за користувачем, анонімів — за IP
+app.UseAuthorization();
+app.UseMiddleware<IdentityHeadersMiddleware>();   // X-User-Id / X-User-Roles лише з токена; клієнтські — видаляються
+
+// Власні ендпоінти шлюзу (складені екрани, health, метрики кешу).
+app.MapTrainingScreen();
+app.MapGatewayEndpoints();
+
+// Усе, що не є власним ендпоінтом шлюзу, проксіюється Ocelot: захист маршрутів → кеш каталогу → таймаут → Ocelot.
+app.UseWhen(context => context.GetEndpoint() is null, branch =>
+{
+    branch.UseMiddleware<ProtectedRoutesMiddleware>();
+    branch.UseMiddleware<CatalogCacheMiddleware>();
+    branch.UseMiddleware<ProxyTimeoutMiddleware>();
+    branch.UseOcelot().Wait();
+});
+
 await app.RunAsync();
+
+// Потрібен інтеграційним тестам (WebApplicationFactory<Program>).
+public partial class Program;

@@ -1,4 +1,5 @@
-﻿# Усе (MySQL + Auth + Catalog + Monolith + Schedule + Gateway) однією командою:  docker compose up --build
+# Усе (MySQL + Auth + Catalog + Monolith + Schedule + Gateway) однією командою:  docker compose up --build
+# ЛР3: назовні опублікований ЛИШЕ шлюз (5000) і MySQL (3308); порти сервісів закриті — див. docker-compose.debug.yml.
 # Потрібен файл .env (див. .env.example): MYSQL_ROOT_PASSWORD і JWT_KEY.
 name: miniproject
 
@@ -28,7 +29,6 @@ services:
       ASPNETCORE_URLS: http://+:5001
       ConnectionStrings__AuthDb: server=mysql;port=3306;database=miniproject_auth;user=root;password=${MYSQL_ROOT_PASSWORD}
       Jwt__Key: ${JWT_KEY:?задайте JWT_KEY у .env}
-    ports: ["5001:5001"]
 
   catalog:
     <<: *service
@@ -37,7 +37,6 @@ services:
       ASPNETCORE_URLS: http://+:5002
       ConnectionStrings__CatalogDb: server=mysql;port=3306;database=miniproject_catalog;user=root;password=${MYSQL_ROOT_PASSWORD}
       Jwt__Key: ${JWT_KEY:?задайте JWT_KEY у .env}
-    ports: ["5002:5002"]
 
   monolith:
     <<: *service
@@ -47,7 +46,6 @@ services:
       ConnectionStrings__SportClub: server=mysql;port=3306;database=sportclub_cs;user=root;password=${MYSQL_ROOT_PASSWORD}
       Catalog__BaseUrl: http://catalog:5002
       Schedule__BaseUrl: http://schedule:5102
-    ports: ["5100:5100"]
 
   schedule:
     <<: *service
@@ -57,7 +55,6 @@ services:
       ConnectionStrings__ScheduleDb: server=mysql;port=3306;database=miniproject_schedule;user=root;password=${MYSQL_ROOT_PASSWORD}
       Services__Catalog__BaseUrl: http://catalog:5002
       Services__Users__BaseUrl: http://monolith:5100
-    ports: ["5102:5102"]
 
   gateway:
     build: { context: ., args: { PROJECT: ApiGateway, DLL: ApiGateway.dll } }
@@ -69,6 +66,7 @@ services:
       Services__Catalog__Host: catalog
       Services__Monolith__Host: monolith
       Services__Schedule__Host: schedule
+      Jwt__Key: ${JWT_KEY:?задайте JWT_KEY у .env}
     ports: ["5000:5000"]
 
 volumes:

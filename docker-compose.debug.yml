@@ -1,0 +1,12 @@
+# ТІЛЬКИ для налагодження: відкриває порти сервісів напряму (в обхід шлюзу).
+#   docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
+# У звичайному режимі (docker compose up) ці порти закриті — ззовні доступний лише шлюз.
+services:
+  auth:
+    ports: ["5001:5001"]
+  catalog:
+    ports: ["5002:5002"]
+  monolith:
+    ports: ["5100:5100"]
+  schedule:
+    ports: ["5102:5102"]

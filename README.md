@@ -1,4 +1,4 @@
-# MiniProject — SportClub: шлюз на Ocelot, Auth-, Catalog- і Schedule-сервіси (ЛР0–ЛР2)
+# MiniProject — SportClub: шлюз на Ocelot, Auth-, Catalog- і Schedule-сервіси (ЛР0–ЛР3)
 
 Мініпроєкт до курсу з мікросервісів. Моноліт із минулого курсу лишається в роботі, перед ним стоїть
 шлюз `ApiGateway` на Ocelot. **ЛР1:** із моноліту винесено два сервіси — `AuthService` (користувачі, ролі, JWT,
@@ -103,6 +103,15 @@ dotnet run --project src/ApiGateway
 (`ConnectionStrings__AuthDb`, `ConnectionStrings__CatalogDb`, `ConnectionStrings__SportClub`, `ConnectionStrings__ScheduleDb`,
 `Jwt__Key`), user-secrets або `.env` — `start-all.ps1` робить це сам. Ключ, що раніше лежав у `appsettings.json`, вважайте
 скомпрометованим (скрипт тепер генерує випадковий).
+
+## ЛР3: розширення шлюзу
+
+Складений запит `GET /api/v1/screens/training/{itemId}` (паралельні виклики, часткова відповідь), JWT-перевірка на шлюзі
+(`X-User-Id`/`X-User-Roles`), таймаути, кеш каталогу з інвалідизацією, обмеження частоти (429 + `Retry-After`), ProblemDetails,
+Swagger (`/swagger`), `/health` із залежностями. Закриті порти сервісів у Docker: `docker compose up --build`
+(для налагодження — `-f docker-compose.yml -f docker-compose.debug.yml`). Шлюзу потрібен той самий `Jwt__Key`, що в Auth
+(`start-all.ps1` і `.env` це роблять). Тести: `dotnet test tests\Gateway.IntegrationTests`.
+Рішення — [ADR-0004](docs/adr/0004-gateway-composition-auth-cache-limits.md), показ — [docs/lab3-demo.md](docs/lab3-demo.md).
 
 ## Порти
 
@@ -235,6 +244,10 @@ Ocelot повертає **502 Bad Gateway** з порожнім тілом, шл
 * [ЛР1: перенесення даних каталогу з моноліту](docs/migrations/workouts-to-catalog-items.md)
 * [ADR-0001. Поділ моноліту на сервіси](docs/adr/0001-split-monolith-into-services.md)
 * [ADR-0002. Шлюз на Ocelot](docs/adr/0002-ocelot-as-gateway.md)
+* [ADR-0004. Складений запит, автентифікація, кеш, ліміти (ЛР3)](docs/adr/0004-gateway-composition-auth-cache-limits.md)
+* [ЛР3: відповіді на контрольні питання](docs/lab3-questions.md)
+* [ЛР3: показ і перевірка](docs/lab3-demo.md)
+* [Діаграма після ЛР3](docs/diagrams/05-composition-lr3.md)
 * [Діаграма композиції](docs/diagrams/01-composition.md)
 * [Послідовність: як зараз](docs/diagrams/02-sequence-current.md)
 * [Послідовність: після винесення сервісів](docs/diagrams/03-sequence-future.md)
