@@ -1,5 +1,5 @@
 # Усе (MySQL + Auth + Catalog + Monolith + Schedule + Gateway) однією командою:  docker compose up --build
-# ЛР3: назовні опублікований ЛИШЕ шлюз (5000) і MySQL (3308); порти сервісів закриті — див. docker-compose.debug.yml.
+# ЛР3/ЛР4: назовні опубліковані ЛИШЕ шлюз (5000), клієнт (8080) і MySQL (3308); порти сервісів закриті — див. docker-compose.debug.yml.
 # Потрібен файл .env (див. .env.example): MYSQL_ROOT_PASSWORD і JWT_KEY.
 name: miniproject
 
@@ -68,6 +68,15 @@ services:
       Services__Schedule__Host: schedule
       Jwt__Key: ${JWT_KEY:?задайте JWT_KEY у .env}
     ports: ["5000:5000"]
+
+  # ЛР4: клієнтський застосунок (nginx + статичні файли) — http://localhost:8080
+  client:
+    build: { context: ./client }
+    restart: unless-stopped
+    depends_on: [gateway]
+    environment:
+      API_BASE_URL: ${CLIENT_API_BASE_URL:-http://localhost:5000}   # адреса ШЛЮЗУ для браузера, не контейнера
+    ports: ["8080:80"]
 
 volumes:
   mysql-data:

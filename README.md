@@ -1,4 +1,4 @@
-# MiniProject — SportClub: шлюз на Ocelot, Auth-, Catalog- і Schedule-сервіси (ЛР0–ЛР3)
+# MiniProject — SportClub: шлюз на Ocelot, Auth-, Catalog- і Schedule-сервіси (ЛР0–ЛР4)
 
 Мініпроєкт до курсу з мікросервісів. Моноліт із минулого курсу лишається в роботі, перед ним стоїть
 шлюз `ApiGateway` на Ocelot. **ЛР1:** із моноліту винесено два сервіси — `AuthService` (користувачі, ролі, JWT,
@@ -112,6 +112,16 @@ Swagger (`/swagger`), `/health` із залежностями. Закриті п
 (для налагодження — `-f docker-compose.yml -f docker-compose.debug.yml`). Шлюзу потрібен той самий `Jwt__Key`, що в Auth
 (`start-all.ps1` і `.env` це роблять). Тести: `dotnet test tests\Gateway.IntegrationTests`.
 Рішення — [ADR-0004](docs/adr/0004-gateway-composition-auth-cache-limits.md), показ — [docs/lab3-demo.md](docs/lab3-demo.md).
+
+## ЛР4: клієнтський застосунок
+
+Каталог `client/` — HTML + JS (ES-модулі, без збірки): 5 екранів (вхід, каталог, деталі, запис, мої записи), єдиний шар API
+(`js/api`), стани завантаження/порожньо/помилка/успіх, обробка 401 (оновлення токена), 429 (пауза за `Retry-After`),
+деградація (`partial`), таймаути, помилки по полях, `Idempotency-Key` + захист від подвійного кліку, debounce пошуку,
+скелетони, офлайн-кеш каталогу, темна тема. Нові ендпоінти шлюзу: `/api/v1/me/bookings` (GET/POST/DELETE).
+Запуск: `docker compose up --build` → http://localhost:8080 (або `start-all.ps1` → http://localhost:3000).
+Демо-дані: `scripts\seed-demo.ps1`. Тести клієнта: `cd client; npm test`. Рішення — [ADR-0005](docs/adr/0005-client-app.md),
+показ — [docs/lab4-demo.md](docs/lab4-demo.md), відповіді — [docs/lab4-questions.md](docs/lab4-questions.md).
 
 ## Порти
 
@@ -248,6 +258,9 @@ Ocelot повертає **502 Bad Gateway** з порожнім тілом, шл
 * [ЛР3: відповіді на контрольні питання](docs/lab3-questions.md)
 * [ЛР3: показ і перевірка](docs/lab3-demo.md)
 * [Діаграма після ЛР3](docs/diagrams/05-composition-lr3.md)
+* [ADR-0005. Клієнтський застосунок (ЛР4)](docs/adr/0005-client-app.md)
+* [ЛР4: відповіді на контрольні питання](docs/lab4-questions.md)
+* [ЛР4: показ і перевірка](docs/lab4-demo.md)
 * [Діаграма композиції](docs/diagrams/01-composition.md)
 * [Послідовність: як зараз](docs/diagrams/02-sequence-current.md)
 * [Послідовність: після винесення сервісів](docs/diagrams/03-sequence-future.md)

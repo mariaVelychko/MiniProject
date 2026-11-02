@@ -23,6 +23,14 @@ public static class GatewayServices
         services.AddHttpClient<ICatalogClient, CatalogClient>(Configure("Catalog", 5002)).AddHttpMessageHandler<CorrelationIdHandler>();
         services.AddHttpClient<IScheduleClient, ScheduleClient>(Configure("Schedule", 5102)).AddHttpMessageHandler<CorrelationIdHandler>();
         services.AddHttpClient<IAuthClient, AuthClient>(Configure("Auth", 5001)).AddHttpMessageHandler<CorrelationIdHandler>();
+        // ЛР4: «мої записи» від імені токена. Записи ходять ще й у моноліт (перевірка клієнта), тож дедлайн — як у проксі.
+        services.AddHttpClient<IBookingsClient, BookingsClient>((sp, client) =>
+        {
+            client.BaseAddress = sp.GetRequiredService<ServiceUrls>().Build("Schedule", 5102);
+            client.Timeout = TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<GatewayOptions>>().Value.Timeouts.ProxySeconds);
+        }).AddHttpMessageHandler<CorrelationIdHandler>();
+        services.AddHttpClient<IPersonDirectory, PersonDirectory>(Configure("Monolith", 5100)).AddHttpMessageHandler<CorrelationIdHandler>();
+        services.AddSingleton(TimeProvider.System);
         services.AddHttpClient("health");
 
         services.AddProblemDetails();

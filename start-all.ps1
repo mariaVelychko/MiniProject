@@ -5,7 +5,8 @@
     [string]$MonolithDb = "sportclub_cs",
     [string[]]$Only = @("Auth", "Catalog", "Monolith", "Schedule", "Gateway"),
     [switch]$ResetDb,
-    [switch]$NoBrowser
+    [switch]$NoBrowser,
+    [switch]$NoClient
 )
 
 $ErrorActionPreference = "Stop"
@@ -76,8 +77,17 @@ foreach ($name in $services.Keys) {
 }
 
 $password = $null
+
+# ЛР4: клієнтський застосунок (статичні файли, потрібен лише Node.js). Без Node його можна підняти в Docker: docker compose up client
+if (-not $NoClient -and ($Only -contains "Gateway") -and (Get-Command node -ErrorAction SilentlyContinue)) {
+    Write-Host "Запускаю клієнт (3000)..." -ForegroundColor Cyan
+    $clientCommand = "`$Host.UI.RawUI.WindowTitle = 'Client (3000)'; node `"$root\client\dev-server.mjs`" 3000"
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", $clientCommand -WorkingDirectory $root | Out-Null
+}
+
 Write-Host ""
 Write-Host "Готово. Адреси:" -ForegroundColor Green
+Write-Host "  Клієнт (ЛР4)             http://localhost:3000"
 Write-Host "  Шлюз (вхід для клієнта)  http://localhost:5000"
 Write-Host "  AuthService   Swagger    http://localhost:5001/swagger"
 Write-Host "  ScheduleService Swagger  http://localhost:5102/swagger"

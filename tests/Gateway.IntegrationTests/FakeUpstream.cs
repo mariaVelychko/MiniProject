@@ -14,6 +14,8 @@ public sealed class FakeUpstream : IAsyncDisposable
     private readonly ConcurrentDictionary<string, int> _delays = new();
     private readonly ConcurrentDictionary<string, bool> _failures = new();
     private readonly ConcurrentDictionary<string, string> _seen = new();
+    private readonly ConcurrentDictionary<string, bool> _bookingKeys = new();
+    private readonly ConcurrentDictionary<(int Workout, int Client), bool> _booked = new();
 
     public int Port { get; private set; }
 
@@ -41,6 +43,9 @@ public sealed class FakeUpstream : IAsyncDisposable
         _delays.Clear();
         _failures.Clear();
         _seen.Clear();
+        _bookingKeys.Clear();
+        _booked.Clear();
+        _booked[(1, 501)] = true;   // у клієнтки «Анна» (id 501 у довіднику моноліту) уже є запис на тренування 1
         return this;
     }
 
@@ -51,6 +56,12 @@ public sealed class FakeUpstream : IAsyncDisposable
     public void Fail(string name, bool fail = true) => _failures[name] = fail;
 
     public void Delay(string name, int milliseconds) => _delays[name] = milliseconds;
+
+    /// <summary>Додати запис клієнта на тренування (для підготовки сценарію).</summary>
+    public void Seed(int workoutId, int clientId) => _booked[(workoutId, clientId)] = true;
+
+    /// <summary>Прибрати всі записи.</summary>
+    public void Clear() => _booked.Clear();
 
     public string Seen(string key) => _seen.GetValueOrDefault(key, string.Empty);
 
@@ -149,6 +160,92 @@ public sealed class FakeUpstream : IAsyncDisposable
                     coachId = 2, coachName = "Іван Ковальчук", participants = 2, maxParticipants = 10, participantIds = new[] { 3, 4 },
                 },
             });
+        });
+
+        // Моноліт: довідник людей. Id в довіднику (501) НЕ збігається з id в Auth (7) — як у справжній системі.
+        _app.MapGet("/api/users", async (HttpRequest request) =>
+        {
+            if (await EnterAsync("users"))
+            {
+                return Results.StatusCode(503);
+            }
+
+            return Results.Json(new[]
+            {
+                new { id = 501, fullName = "Анна", phone = "0501112233", email = "анна@test.ua", role = "client", roleInfo = "Клієнт", specialization = (string?)null },
+            });
+        });
+
+        // Schedule: записи клієнта
+        _app.MapGet("/api/bookings/client/{clientId:int}", async (int clientId) =>
+        {
+            _seen["bookings:clientId"] = clientId.ToString();
+
+            if (await EnterAsync("bookings-list"))
+            {
+                return Results.StatusCode(503);
+            }
+
+            var mine = _booked.Where(b => b.Key.Client == clientId).Select(b => b.Key.Workout).Order().ToList();
+
+            return Results.Json(mine.Select(w => new
+            {
+                id = w, catalogItemId = 1, type = "Йога для початківців", time = w == 1 ? "2099-01-01T18:00:00" : "2020-01-01T18:00:00",
+                durationMin = 60, hall = "Зал 1", coachId = 2, coachName = "Іван Ковальчук", participants = 2, maxParticipants = 10,
+                participantIds = new[] { 3, 4 },
+            }));
+        });
+
+        _app.MapPost("/api/bookings", async (HttpRequest request) =>
+        {
+            var body = await request.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var workoutId = body.GetProperty("workoutId").GetInt32();
+            var clientId = body.GetProperty("clientId").GetInt32();
+            var key = request.Headers["Idempotency-Key"].ToString();
+
+            _seen["book:clientId"] = clientId.ToString();
+            _seen["book:key"] = key;
+            _calls.AddOrUpdate("book", 1, (_, v) => v + 1);
+
+            if (_failures.GetValueOrDefault("book"))
+            {
+                return Results.StatusCode(503);
+            }
+
+            if (_bookingKeys.ContainsKey(key))
+            {
+                request.HttpContext.Response.Headers["Idempotency-Replayed"] = "true";
+                return Results.Json(new { id = workoutId });
+            }
+
+            if (workoutId == 404)
+            {
+                return Results.Json(new { message = "Тренування 404 не знайдено" }, statusCode: 404);
+            }
+
+            if (workoutId == 409)
+            {
+                return Results.Json(new { message = "Вільних місць немає" }, statusCode: 409);
+            }
+
+            _bookingKeys[key] = true;
+            _booked[(workoutId, clientId)] = true;
+            _calls.AddOrUpdate("book-created", 1, (_, v) => v + 1);
+            return Results.Json(new { id = workoutId });
+        });
+
+        _app.MapDelete("/api/bookings/{workoutId:int}/{clientId:int}", async (int workoutId, int clientId) =>
+        {
+            _seen["cancel:clientId"] = clientId.ToString();
+
+            if (await EnterAsync("cancel"))
+            {
+                return Results.StatusCode(503);
+            }
+
+            return _booked.TryRemove((workoutId, clientId), out _)
+                ? Results.NoContent()
+                : Results.Json(new { message = "Клієнт не записаний на це тренування" }, statusCode: 404);
         });
 
         // Допоміжні маршрути для перевірки проксі (йдуть через резервний маршрут /api/{everything})

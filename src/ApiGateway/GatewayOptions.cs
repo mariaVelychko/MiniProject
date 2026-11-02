@@ -8,6 +8,12 @@ public sealed class GatewayOptions
     public TimeoutOptions Timeouts { get; set; } = new();
     public CacheOptions Cache { get; set; } = new();
     public RateLimitOptions RateLimits { get; set; } = new();
+
+    /// <summary>
+    /// Зсув місцевого часу від UTC, год. Час тренувань у Schedule — «наївний» (без поясу, як у моноліті), тому щоб
+    /// визначити «майбутнє/минуле», шлюз порівнює його з місцевим часом клубу, а не сервера (у Docker сервер живе за UTC).
+    /// </summary>
+    public int LocalUtcOffsetHours { get; set; } = 2;
 }
 
 /// <summary>Таймаути всіх вихідних викликів шлюзу (ЛР3, 3.2).</summary>

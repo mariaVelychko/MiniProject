@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportClub — запис на тренування</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/app.css">
+  <script>
+    // Тема застосовується до відмальовування, щоб не було спалаху світлої теми.
+    try { var t = localStorage.getItem('sportclub.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar" id="topbar" hidden></header>
+    <div id="global-banner" class="global-banner" role="status" aria-live="polite" hidden></div>
+    <main id="view" class="view" tabindex="-1">
+      <p class="muted center">Завантаження…</p>
+    </main>
+  </div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <noscript><p class="center">Для роботи застосунку потрібен JavaScript.</p></noscript>
+
+  <!-- Адреса шлюзу — з конфігурації, а не з коду. У Docker файл генерується зі змінної API_BASE_URL. -->
+  <script src="config.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

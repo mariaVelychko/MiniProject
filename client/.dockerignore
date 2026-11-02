@@ -1,0 +1,6 @@
+node_modules
+tests
+dev-server.mjs
+package.json
+Dockerfile
+.dockerignore

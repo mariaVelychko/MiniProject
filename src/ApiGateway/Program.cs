@@ -46,7 +46,9 @@ for (var i = 0; builder.Configuration[$"Routes:{i}:UpstreamPathTemplate"] is not
 builder.Configuration.AddInMemoryCollection(overrides);
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["*"])
-    .AllowAnyHeader().AllowAnyMethod().WithExposedHeaders(CorrelationHeader)));
+    .AllowAnyHeader().AllowAnyMethod()
+    // Браузерний клієнт бачить лише «безпечні» заголовки відповіді — решту (зокрема Retry-After для 429) треба дозволити явно.
+    .WithExposedHeaders(CorrelationHeader, "Retry-After", "X-Partial-Response", "X-Cache", "Idempotency-Replayed")));
 builder.Services.AddOcelot(builder.Configuration);
 
 // ЛР3: складений ендпоінт, кеш, ліміти, таймаути (GatewayServices), перевірка JWT на шлюзі та Swagger.
@@ -95,6 +97,7 @@ app.UseMiddleware<IdentityHeadersMiddleware>();   // X-User-Id / X-User-Roles л
 // Власні ендпоінти шлюзу (складені екрани, health, метрики кешу).
 app.MapTrainingScreen();
 app.MapGatewayEndpoints();
+app.MapMyBookings();     // ЛР4: записи користувача від імені токена (клієнт не надсилає userId)
 
 // Усе, що не є власним ендпоінтом шлюзу, проксіюється Ocelot: захист маршрутів → кеш каталогу → таймаут → Ocelot.
 app.UseWhen(context => context.GetEndpoint() is null, branch =>
