@@ -1,4 +1,4 @@
-import { h } from './dom.js';
+﻿import { h } from './dom.js';
 import { userMessage, Kind } from '../api/errors.js';
 
 /** Скелетони замість спінера: видно каркас майбутнього вмісту. */

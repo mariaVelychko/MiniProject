@@ -1,4 +1,4 @@
-import { h } from '../ui/dom.js';
+﻿import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { Kind } from '../api/errors.js';
 import { skeletonCards, emptyView, errorView, banner, retryButton } from '../ui/components.js';
@@ -41,8 +41,6 @@ export function mountCatalog({ container, services, api, navigate }) {
       h('div', { class: 'toolbar' }, search, category),
       notice,
       results));
-
-  // Категорії — допоміжні: якщо не завантажились, фільтр просто не з'являється (екран працює без нього).
   services.catalog.categories().then((list) => {
     if (disposed) return;
     for (const item of list ?? []) category.append(h('option', { value: item.id }, item.name));

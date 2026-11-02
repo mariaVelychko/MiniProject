@@ -1,5 +1,4 @@
-// Лише форматування для показу. Жодних обчислень предметної області (суми, знижки, доступність) тут немає.
-
+﻿
 const dateTime = new Intl.DateTimeFormat('uk-UA', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const time = new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' });
 const money = new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', maximumFractionDigits: 0 });

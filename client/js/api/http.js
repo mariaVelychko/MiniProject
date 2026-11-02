@@ -1,4 +1,4 @@
-import { ApiError, Kind, errorFromResponse } from './errors.js';
+﻿import { ApiError, Kind, errorFromResponse } from './errors.js';
 
 /**
  * Єдиний шар роботи з API (ЛР4, 5.1). Усе, що стосується мережі, зібрано тут; екрани fetch напряму не викликають.
@@ -108,7 +108,6 @@ export function createApiClient({
   }
 
   async function send(method, path, options = {}) {
-    // 429: пауза діє на ВСІ запити — на сервер вони не йдуть, поки час не мине.
     if (rateLimit.remainingSeconds > 0) {
       throw new ApiError({ kind: Kind.RATE_LIMITED, status: 429, retryAfterSeconds: rateLimit.remainingSeconds });
     }

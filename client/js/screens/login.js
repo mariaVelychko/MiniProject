@@ -1,4 +1,4 @@
-import { h } from '../ui/dom.js';
+﻿import { h } from '../ui/dom.js';
 import { Kind, userMessage } from '../api/errors.js';
 import { watchRateLimit, banner } from '../ui/components.js';
 
@@ -40,8 +40,6 @@ export function mountLogin({ container, services, api, navigate, notice }) {
       setFieldError('email', null);
       setFieldError('password', null);
       message.replaceChildren();
-
-      // Клієнтська валідація — для зручності; перевірка на сервері все одно виконується.
       let valid = true;
       if (!EMAIL.test(email.value.trim())) { setFieldError('email', 'Введіть коректну електронну адресу.'); valid = false; }
       if (!password.value) { setFieldError('password', 'Введіть пароль.'); valid = false; }

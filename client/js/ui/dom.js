@@ -1,6 +1,4 @@
-// Мінімальний помічник для побудови DOM без бібліотек. Текст завжди вставляється як текст (textContent),
-// а не як HTML, тож дані з сервера не можуть виконати код на сторінці (XSS).
-
+﻿
 export function h(tag, attrs, ...children) {
   const el = document.createElement(tag);
 

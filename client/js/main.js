@@ -1,4 +1,4 @@
-import { createTokenStore } from './api/tokens.js';
+﻿import { createTokenStore } from './api/tokens.js';
 import { createApiClient } from './api/http.js';
 import { createServices } from './api/services.js';
 import { state } from './state.js';
@@ -21,7 +21,6 @@ const api = createApiClient({
   baseUrl: config.apiBaseUrl,
   tokens,
   timeoutMs: config.timeoutMs ?? 8000,
-  // 401, який не вдалося вилікувати оновленням токена: на екран входу.
   onSessionExpired: () => { sessionNotice = 'Сесію завершено. Увійдіть знову.'; state.screens.clear(); state.userName = null; navigate('#/login'); },
 });
 
@@ -94,8 +93,6 @@ function renderTopbar(hash) {
         onclick: async () => { await services.auth.logout(); state.screens.clear(); state.userName = null; toast('Ви вийшли з акаунта.'); navigate('#/login'); },
       }, 'Вийти')));
 }
-
-// Глобальна смужка 429: поки діє пауза, показуємо, коли можна повторити (запити в цей час не надсилаються).
 watchRateLimit(api, globalBanner, (left) => {
   globalBanner.hidden = left <= 0;
   if (left > 0) globalBanner.textContent = `Забагато запитів. Нові запити можна буде надіслати через ${left} с.`;

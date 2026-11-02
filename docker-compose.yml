@@ -67,6 +67,8 @@ services:
       Services__Monolith__Host: monolith
       Services__Schedule__Host: schedule
       Jwt__Key: ${JWT_KEY:?задайте JWT_KEY у .env}
+      Cors__Origins__0: http://localhost:8080
+      Cors__Origins__1: http://localhost:3000
     ports: ["5000:5000"]
 
   # ЛР4: клієнтський застосунок (nginx + статичні файли) — http://localhost:8080

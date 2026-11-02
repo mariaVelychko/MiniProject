@@ -1,5 +1,4 @@
-// Темна тема: перемикач зберігає вибір між запусками (localStorage); без вибору — за налаштуванням системи.
-
+﻿
 const KEY = 'sportclub.theme';
 
 export function currentTheme() {

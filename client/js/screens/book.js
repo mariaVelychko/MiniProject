@@ -1,4 +1,4 @@
-import { h } from '../ui/dom.js';
+﻿import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { createAttempt } from '../idempotency.js';
 import { ApiError, Kind, userMessage } from '../api/errors.js';
@@ -27,8 +27,6 @@ export function mountBook({ container, params, services, api, navigate }) {
     view.replaceChildren(skeletonDetails());
 
     try {
-      // Екран деталей уже завантажив складену відповідь — повторного запиту не робимо.
-      // Часткову відповідь (без розкладу) повторно не використовуємо: форма без розкладу безглузда, краще спитати ще раз.
       const cached = state.screens.get(String(itemId));
       const data = cached && !cached.partial ? cached : await services.screens.training(itemId, { signal: controller.signal });
       if (disposed) return;

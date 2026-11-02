@@ -1,4 +1,4 @@
-import { h } from '../ui/dom.js';
+﻿import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { Kind, userMessage } from '../api/errors.js';
 import { skeletonDetails, emptyView, errorView, banner, retryButton } from '../ui/components.js';
@@ -24,7 +24,6 @@ export function mountDetails({ container, params, services, api }) {
       h('div', null,
         h('h3', null, formatDateTime(session.time)),
         h('p', { class: 'muted' }, `${session.hall} · тренер ${session.coachName} · ${formatMinutes(session.durationMin)}`),
-        // Показуємо те, що прийшло. Скільки лишилось місць і чи можна записатися, вирішує сервер, а не клієнт.
         h('p', { class: 'muted small' }, `Записано: ${session.participants} з ${session.maxParticipants}`)),
       h('a', { class: 'btn btn-primary', href: `#/book/${itemId}/${session.id}` }, 'Записатися'));
   }
