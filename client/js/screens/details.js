@@ -1,4 +1,4 @@
-﻿import { h } from '../ui/dom.js';
+import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { Kind, userMessage } from '../api/errors.js';
 import { skeletonDetails, emptyView, errorView, banner, retryButton } from '../ui/components.js';
@@ -6,11 +6,6 @@ import { formatDateTime, formatPrice, formatMinutes } from '../ui/format.js';
 
 const NAMES = { sessions: 'розклад тренувань', me: 'дані профілю', item: 'опис заняття' };
 
-/**
- * Деталі об'єкта. ОДИН запит до складеного ендпоінта шлюзу (ЛР3) повертає і опис, і розклад, і профіль —
- * клієнт не ходить окремо в каталог, розклад і Auth. Частково деградовану відповідь показуємо чесно:
- * що є — те видно, про відсутнє сказано прямо (а не «тренувань немає»).
- */
 export function mountDetails({ container, params, services, api }) {
   const itemId = params.id;
   let controller = null;
@@ -24,6 +19,7 @@ export function mountDetails({ container, params, services, api }) {
       h('div', null,
         h('h3', null, formatDateTime(session.time)),
         h('p', { class: 'muted' }, `${session.hall} · тренер ${session.coachName} · ${formatMinutes(session.durationMin)}`),
+
         h('p', { class: 'muted small' }, `Записано: ${session.participants} з ${session.maxParticipants}`)),
       h('a', { class: 'btn btn-primary', href: `#/book/${itemId}/${session.id}` }, 'Записатися'));
   }

@@ -1,4 +1,4 @@
-﻿
+
 export function h(tag, attrs, ...children) {
   const el = document.createElement(tag);
 

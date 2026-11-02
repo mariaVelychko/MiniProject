@@ -1,4 +1,4 @@
-﻿import { createTokenStore } from './api/tokens.js';
+import { createTokenStore } from './api/tokens.js';
 import { createApiClient } from './api/http.js';
 import { createServices } from './api/services.js';
 import { state } from './state.js';
@@ -21,6 +21,7 @@ const api = createApiClient({
   baseUrl: config.apiBaseUrl,
   tokens,
   timeoutMs: config.timeoutMs ?? 8000,
+
   onSessionExpired: () => { sessionNotice = 'Сесію завершено. Увійдіть знову.'; state.screens.clear(); state.userName = null; navigate('#/login'); },
 });
 
@@ -41,7 +42,6 @@ const routes = [
 let dispose = null;
 let rendered = null;
 
-/** Перехід у застосунку: адреса змінюється й екран перемальовується одразу (без проміжних станів). */
 export function navigate(hash) {
   if ((location.hash || '#/') !== hash) history.pushState(null, '', hash);
   render();
@@ -93,6 +93,7 @@ function renderTopbar(hash) {
         onclick: async () => { await services.auth.logout(); state.screens.clear(); state.userName = null; toast('Ви вийшли з акаунта.'); navigate('#/login'); },
       }, 'Вийти')));
 }
+
 watchRateLimit(api, globalBanner, (left) => {
   globalBanner.hidden = left <= 0;
   if (left > 0) globalBanner.textContent = `Забагато запитів. Нові запити можна буде надіслати через ${left} с.`;

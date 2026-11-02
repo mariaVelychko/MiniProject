@@ -1,4 +1,4 @@
-﻿import { h } from '../ui/dom.js';
+import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { Kind, userMessage } from '../api/errors.js';
 import { skeletonRows, emptyView, errorView, banner } from '../ui/components.js';
@@ -7,7 +7,6 @@ import { toast } from '../ui/toast.js';
 
 const STATUS = { upcoming: ['Заплановано', 'badge-ok'], past: ['Минуло', 'badge-muted'] };
 
-/** Мої операції: список записів зі статусами та скасуванням. Статус і «чи можна скасувати» приходять від сервера. */
 export function mountBookings({ container, services, api }) {
   let disposed = false;
   let controller = null;
@@ -40,7 +39,7 @@ export function mountBookings({ container, services, api }) {
     };
 
     async function cancel(confirm, no) {
-      if (confirm.disabled) return;   // подвійне натискання
+      if (confirm.disabled) return;
       confirm.disabled = true;
       no.disabled = true;
       confirm.textContent = 'Скасовуємо…';
@@ -48,7 +47,7 @@ export function mountBookings({ container, services, api }) {
 
       try {
         await services.bookings.cancel(booking.workoutId);
-        state.screens.clear();   // кількість учасників змінилась
+        state.screens.clear();
         toast('Запис скасовано.', { kind: 'success' });
         const left = items.filter((b) => b.workoutId !== booking.workoutId);
         items.length = 0;

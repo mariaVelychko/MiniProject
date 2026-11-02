@@ -1,15 +1,10 @@
-﻿import { h } from '../ui/dom.js';
+import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { createAttempt } from '../idempotency.js';
 import { ApiError, Kind, userMessage } from '../api/errors.js';
 import { skeletonDetails, emptyView, errorView, banner, watchRateLimit } from '../ui/components.js';
 import { formatDateTime } from '../ui/format.js';
 
-/**
- * Створення операції: запис на тренування. Форма з валідацією, помилками від сервера біля поля, Idempotency-Key,
- * який генерує клієнт, і захистом від подвійного натискання. Ідентифікатор користувача форма НЕ надсилає:
- * сервер бере його з токена.
- */
 export function mountBook({ container, params, services, api, navigate }) {
   const itemId = params.id;
   const attempt = createAttempt();
@@ -27,6 +22,7 @@ export function mountBook({ container, params, services, api, navigate }) {
     view.replaceChildren(skeletonDetails());
 
     try {
+
       const cached = state.screens.get(String(itemId));
       const data = cached && !cached.partial ? cached : await services.screens.training(itemId, { signal: controller.signal });
       if (disposed) return;
@@ -84,7 +80,7 @@ export function mountBook({ container, params, services, api, navigate }) {
       class: 'card form', novalidate: true,
       onsubmit: async (event) => {
         event.preventDefault();
-        if (busy) return;   // другий клік, поки йде запит, нічого не відправляє
+        if (busy) return;
 
         setFieldError(null);
         message.replaceChildren();
@@ -98,11 +94,11 @@ export function mountBook({ container, params, services, api, navigate }) {
         try {
           await services.bookings.create(workoutId, attempt.keyFor({ workoutId }));
           attempt.settle({ outcomeUnknown: false });
-          state.screens.delete(String(itemId));   // кількість учасників змінилась — екран деталей треба перезавантажити
+          state.screens.delete(String(itemId));
           state.flash = { text: 'Ви записані на тренування.', kind: 'success' };
           navigate('#/my');
         } catch (error) {
-          attempt.settle(error);   // мережа/таймаут → ключ лишається, повтор не створить дубль
+          attempt.settle(error);
           busy = false;
           refresh();
           showError(error);
@@ -116,7 +112,7 @@ export function mountBook({ container, params, services, api, navigate }) {
     h('div', { class: 'form-actions' }, submit, h('a', { class: 'btn', href: `#/item/${itemId}` }, 'Скасувати')));
 
     function showError(error) {
-      if (error.kind === Kind.UNAUTHORIZED) return;   // про вхід подбає головний обробник сесії
+      if (error.kind === Kind.UNAUTHORIZED) return;
 
       const byField = error.fieldErrors?.workoutId;
       if (byField?.length) setFieldError(byField[0]);

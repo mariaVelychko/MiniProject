@@ -1,7 +1,6 @@
-﻿import { h } from './dom.js';
+import { h } from './dom.js';
 import { userMessage, Kind } from '../api/errors.js';
 
-/** Скелетони замість спінера: видно каркас майбутнього вмісту. */
 export function skeletonCards(count = 6) {
   return h('div', { class: 'grid', 'aria-hidden': 'true' },
     Array.from({ length: count }, () => h('div', { class: 'card skeleton-card' },
@@ -23,7 +22,6 @@ export function skeletonDetails() {
     skeletonRows(2));
 }
 
-/** Порожній стан: це НЕ помилка («нічого не знайдено»), тож без червоного. */
 export function emptyView({ title, text, action }) {
   return h('div', { class: 'state state-empty' },
     h('div', { class: 'state-icon', 'aria-hidden': 'true' }, '🗂️'),
@@ -32,10 +30,6 @@ export function emptyView({ title, text, action }) {
     action);
 }
 
-/**
- * Спостерігає за паузою після 429: щосекунди (поки елемент у документі) викликає onTick(залишилось секунд).
- * Повертає функцію зупинки. Сам зупиняється, коли елемент зникає зі сторінки.
- */
 export function watchRateLimit(api, element, onTick) {
   let seen = false;
   const tick = () => {
@@ -44,13 +38,12 @@ export function watchRateLimit(api, element, onTick) {
     onTick(api.rateLimit.remainingSeconds);
   };
   const timer = setInterval(tick, 500);
-  const unsubscribe = api.rateLimit.subscribe(tick);   // миттєва реакція на новий 429, не чекаючи таймера
+  const unsubscribe = api.rateLimit.subscribe(tick);
   const stop = () => { clearInterval(timer); unsubscribe(); };
   onTick(api.rateLimit.remainingSeconds);
   return stop;
 }
 
-/** Кнопка «Повторити»: під час паузи після 429 вимкнена й показує, скільки лишилося; потім сама оживає. */
 export function retryButton({ api, onClick, label = 'Повторити' }) {
   const button = h('button', { class: 'btn', type: 'button', onclick: onClick }, label);
 
@@ -62,7 +55,6 @@ export function retryButton({ api, onClick, label = 'Повторити' }) {
   return button;
 }
 
-/** Стан помилки: зрозумілий текст (без винятків і стека), код запиту для підтримки, кнопка «Повторити». */
 export function errorView({ error, api, onRetry, title }) {
   const limited = error.kind === Kind.RATE_LIMITED;
 

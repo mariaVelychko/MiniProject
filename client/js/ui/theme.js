@@ -1,4 +1,4 @@
-﻿
+
 const KEY = 'sportclub.theme';
 
 export function currentTheme() {
@@ -10,6 +10,6 @@ export function currentTheme() {
 export function toggleTheme() {
   const next = currentTheme() === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  try { localStorage.setItem(KEY, next); } catch { /* вибір діє до перезавантаження */ }
+  try { localStorage.setItem(KEY, next); } catch {  }
   return next;
 }

@@ -1,15 +1,15 @@
-﻿
+
 export const Kind = Object.freeze({
-  NETWORK: 'network',            // немає зв'язку / сервер не відповідає на з'єднання
-  TIMEOUT: 'timeout',            // клієнтський таймаут
-  UNAVAILABLE: 'unavailable',    // 502 / 503 / 504 від шлюзу
-  RATE_LIMITED: 'rate_limited',  // 429
-  UNAUTHORIZED: 'unauthorized',  // 401
-  FORBIDDEN: 'forbidden',        // 403
-  NOT_FOUND: 'not_found',        // 404
-  CONFLICT: 'conflict',          // 409
-  VALIDATION: 'validation',      // 400 / 422 з помилками по полях
-  SERVER: 'server',              // решта 5xx, нечитабельна відповідь
+  NETWORK: 'network',
+  TIMEOUT: 'timeout',
+  UNAVAILABLE: 'unavailable',
+  RATE_LIMITED: 'rate_limited',
+  UNAUTHORIZED: 'unauthorized',
+  FORBIDDEN: 'forbidden',
+  NOT_FOUND: 'not_found',
+  CONFLICT: 'conflict',
+  VALIDATION: 'validation',
+  SERVER: 'server',
 });
 
 export class ApiError extends Error {
@@ -26,21 +26,15 @@ export class ApiError extends Error {
     this.code = code;
   }
 
-  /** Є сенс показати кнопку «Повторити»: проблема тимчасова. */
   get retryable() {
     return [Kind.NETWORK, Kind.TIMEOUT, Kind.UNAVAILABLE, Kind.SERVER, Kind.RATE_LIMITED].includes(this.kind);
   }
 
-  /**
-   * Після такої помилки невідомо, чи виконав сервер запит (відповідь могла загубитись). Тому спроба
-   * створення повторюється з тим самим Idempotency-Key: якщо запит дійшов, дубля не буде.
-   */
   get outcomeUnknown() {
     return [Kind.NETWORK, Kind.TIMEOUT, Kind.UNAVAILABLE, Kind.SERVER].includes(this.kind);
   }
 }
 
-/** Помилки по полях: ключі приводимо до camelCase ("StartDate" → "startDate"), значення — завжди масив рядків. */
 export function normalizeFieldErrors(errors) {
   const result = {};
   if (!errors || typeof errors !== 'object') return result;
@@ -54,7 +48,6 @@ export function normalizeFieldErrors(errors) {
   return result;
 }
 
-/** Секунди з заголовка Retry-After: або число, або HTTP-дата. */
 export function parseRetryAfter(value, now = Date.now()) {
   if (value == null || value === '') return null;
   const asNumber = Number(value);
@@ -63,7 +56,6 @@ export function parseRetryAfter(value, now = Date.now()) {
   return Number.isNaN(date) ? null : Math.max(1, Math.ceil((date - now) / 1000));
 }
 
-/** Розбір відповіді з помилкою: ProblemDetails шлюзу, {"message": "..."} сервісів або порожнє тіло. */
 export function errorFromResponse(status, body, headers, now = Date.now()) {
   const problem = body && typeof body === 'object' ? body : {};
   const correlationId = problem.correlationId ?? headers?.get?.('X-Correlation-Id') ?? null;
@@ -96,10 +88,6 @@ const GENERIC = {
   [Kind.SERVER]: 'Щось пішло не так. Спробуйте ще раз.',
 };
 
-/**
- * Текст для користувача. Показуємо українське повідомлення шлюзу/сервісу лише для «очікуваних» помилок
- * (4xx та 503): там воно написане для людей. Для невідомих збоїв (500) — завжди загальний текст: деталі лише в лог.
- */
 export function userMessage(error) {
   if (!(error instanceof ApiError)) return GENERIC[Kind.SERVER];
 

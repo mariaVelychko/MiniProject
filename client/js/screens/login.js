@@ -1,10 +1,9 @@
-﻿import { h } from '../ui/dom.js';
+import { h } from '../ui/dom.js';
 import { Kind, userMessage } from '../api/errors.js';
 import { watchRateLimit, banner } from '../ui/components.js';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Екран входу: форма, повідомлення про невірні дані, захист від подвійного натискання, пауза після 429. */
 export function mountLogin({ container, services, api, navigate, notice }) {
   let busy = false;
 
@@ -35,11 +34,12 @@ export function mountLogin({ container, services, api, navigate, notice }) {
     class: 'card form', novalidate: true,
     onsubmit: async (event) => {
       event.preventDefault();
-      if (busy) return;   // подвійне натискання не відправляє другий запит
+      if (busy) return;
 
       setFieldError('email', null);
       setFieldError('password', null);
       message.replaceChildren();
+
       let valid = true;
       if (!EMAIL.test(email.value.trim())) { setFieldError('email', 'Введіть коректну електронну адресу.'); valid = false; }
       if (!password.value) { setFieldError('password', 'Введіть пароль.'); valid = false; }

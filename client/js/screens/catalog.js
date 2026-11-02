@@ -1,16 +1,15 @@
-﻿import { h } from '../ui/dom.js';
+import { h } from '../ui/dom.js';
 import { state } from '../state.js';
 import { Kind } from '../api/errors.js';
 import { skeletonCards, emptyView, errorView, banner, retryButton } from '../ui/components.js';
 import { formatPrice, formatMinutes, formatClock } from '../ui/format.js';
 
 const CACHE_KEY = 'sportclub.catalog.last';
-const SEARCH_DELAY_MS = 400;   // пошук не шле запит на кожну літеру
+const SEARCH_DELAY_MS = 400;
 
 const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch { return null; } };
-const writeCache = (value) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify(value)); } catch { /* офлайн-копія — лише бонус */ } };
+const writeCache = (value) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify(value)); } catch {  } };
 
-/** Список об'єктів з каталогу: пошук (з затримкою), фільтр за категорією, пагінація, чотири стани, застарілі дані без мережі. */
 export function mountCatalog({ container, services, api, navigate }) {
   const query = state.catalogQuery;
   let controller = null;
@@ -41,6 +40,7 @@ export function mountCatalog({ container, services, api, navigate }) {
       h('div', { class: 'toolbar' }, search, category),
       notice,
       results));
+
   services.catalog.categories().then((list) => {
     if (disposed) return;
     for (const item of list ?? []) category.append(h('option', { value: item.id }, item.name));
@@ -88,7 +88,7 @@ export function mountCatalog({ container, services, api, navigate }) {
   }
 
   async function load() {
-    controller?.abort();                  // попередній запит уже не потрібен
+    controller?.abort();
     controller = new AbortController();
     const id = ++requestId;
     const params = { search: query.search, categoryId: query.categoryId, page: query.page };
@@ -100,7 +100,7 @@ export function mountCatalog({ container, services, api, navigate }) {
 
     try {
       const data = await services.catalog.list({ ...params, signal: controller.signal });
-      if (disposed || id !== requestId) return;   // відповідь на застарілий запит ігноруємо
+      if (disposed || id !== requestId) return;
       writeCache({ cacheKey, savedAt: Date.now(), data });
       renderSuccess(data);
     } catch (error) {

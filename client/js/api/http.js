@@ -1,15 +1,5 @@
-﻿import { ApiError, Kind, errorFromResponse } from './errors.js';
+import { ApiError, Kind, errorFromResponse } from './errors.js';
 
-/**
- * Єдиний шар роботи з API (ЛР4, 5.1). Усе, що стосується мережі, зібрано тут; екрани fetch напряму не викликають.
- *
- *  • базова адреса — з конфігурації (config.js), у коді адрес сервісів немає: клієнт знає лише шлюз;
- *  • токен додається автоматично;
- *  • 401 → ОДНА спроба оновити токен (спільна для паралельних запитів) і повтор запиту; не вдалось → сесію завершено;
- *  • 429 → читаємо Retry-After і до кінця паузи НЕ надсилаємо жодних запитів;
- *  • таймаут і мережеві збої → ApiError (а не зависання);
- *  • технічні подробиці йдуть у лог, користувачу — лише userMessage().
- */
 export function createApiClient({
   baseUrl,
   tokens,
@@ -27,7 +17,7 @@ export function createApiClient({
   const rateListeners = new Set();
 
   const rateLimit = {
-    /** Скільки секунд ще діє пауза після 429 (0 — можна надсилати). */
+    
     get remainingSeconds() { return Math.max(0, Math.ceil((blockedUntil - now()) / 1000)); },
     get until() { return blockedUntil; },
     subscribe(fn) { rateListeners.add(fn); return () => rateListeners.delete(fn); },
@@ -68,7 +58,7 @@ export function createApiClient({
     try {
       return await fetchImpl(url(path, query), init);
     } catch (cause) {
-      if (signal?.aborted) throw cause;   // скасовано самим застосунком (наприклад, застарілий пошук)
+      if (signal?.aborted) throw cause;
 
       logger.warn?.(`[api] ${method} ${path}: ${timedOut ? 'таймаут' : 'мережева помилка'}`, cause);
       throw new ApiError({ kind: timedOut ? Kind.TIMEOUT : Kind.NETWORK });
@@ -85,7 +75,6 @@ export function createApiClient({
     try { return await response.json(); } catch { return null; }
   }
 
-  /** Одна спроба оновити токен; усі запити, що одночасно отримали 401, чекають на неї разом. */
   function refreshOnce() {
     if (!tokens.refreshToken) return Promise.resolve(false);
 
@@ -108,6 +97,7 @@ export function createApiClient({
   }
 
   async function send(method, path, options = {}) {
+
     if (rateLimit.remainingSeconds > 0) {
       throw new ApiError({ kind: Kind.RATE_LIMITED, status: 429, retryAfterSeconds: rateLimit.remainingSeconds });
     }
@@ -116,7 +106,7 @@ export function createApiClient({
 
     if (response.status === 401 && options.auth !== false) {
       if (await refreshOnce()) {
-        response = await perform(method, path, options);   // повтор — лише один
+        response = await perform(method, path, options);
       }
 
       if (response.status === 401) {

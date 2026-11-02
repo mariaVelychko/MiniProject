@@ -1,5 +1,4 @@
-// Мінімальний статичний сервер для запуску клієнта без Docker: node dev-server.mjs [порт]
-// (потрібен лише Node.js; у клієнта немає залежностей і кроку збірки).
+
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';

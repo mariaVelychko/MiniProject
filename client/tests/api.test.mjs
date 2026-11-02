@@ -1,5 +1,4 @@
-// Тести клієнтського шару (ЛР4, плюшка): HTTP підміняється, мережа не потрібна.
-// Запуск: npm test  (або: node --test)
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -40,8 +39,6 @@ function setup(handler, { onSessionExpired = () => {}, timeoutMs = 200 } = {}) {
   return { api, calls, tokens, advance: (ms) => { time += ms; } };
 }
 
-// ---------- 1. 401: одна спроба оновити токен ----------
-
 test('401: токен оновлюється ОДИН раз і запит повторюється з новим токеном', async () => {
   const { api, calls, tokens } = setup((url, init) => {
     if (url.endsWith('/api/v1/auth/refresh')) {
@@ -54,7 +51,7 @@ test('401: токен оновлюється ОДИН раз і запит по�
 
   assert.deepEqual(data, { ok: true });
   assert.equal(calls.filter((c) => c.url.endsWith('/auth/refresh')).length, 1);
-  assert.equal(calls.length, 3);   // запит → refresh → повтор запиту
+  assert.equal(calls.length, 3);
   assert.equal(tokens.accessToken, 'new-access');
   assert.equal(tokens.refreshToken, 'refresh-2');
 });
@@ -78,10 +75,8 @@ test('401: якщо оновити токен не вдалося — токен
 
   assert.equal(expired, 1);
   assert.equal(tokens.accessToken, null);
-  assert.equal(calls.filter((c) => c.url.endsWith('/auth/refresh')).length, 1);   // не більше однієї спроби
+  assert.equal(calls.filter((c) => c.url.endsWith('/auth/refresh')).length, 1);
 });
-
-// ---------- 2. 429: Retry-After і пауза ----------
 
 test('429: читається Retry-After, під час паузи запити на сервер НЕ надсилаються', async () => {
   const { api, calls, advance } = setup(() => json(429, { title: 'Забагато запитів', status: 429 }, { 'Retry-After': '30' }));
@@ -91,7 +86,7 @@ test('429: читається Retry-After, під час паузи запити
 
   advance(10_000);
   await assert.rejects(api.get('/api/v1/catalog/items'), (e) => e.kind === Kind.RATE_LIMITED && e.retryAfterSeconds === 20);
-  assert.equal(calls.length, 1);   // другий запит до мережі не дійшов
+  assert.equal(calls.length, 1);
 
   advance(21_000);
   assert.equal(api.rateLimit.remainingSeconds, 0);
@@ -119,8 +114,6 @@ test('parseRetryAfter: секунди та HTTP-дата', () => {
   assert.equal(parseRetryAfter('Mon, 02 Nov 2026 10:00:20 GMT', now), 20);
 });
 
-// ---------- 3. Помилки валідації ----------
-
 test('400: помилки по полях розбираються з відповіді сервера (ключі → camelCase)', async () => {
   const { api } = setup(() => json(400, {
     title: 'Помилка валідації', status: 400,
@@ -140,8 +133,6 @@ test('400: помилки по полях розбираються з відпо
 test('normalizeFieldErrors: рядок замість масиву, порожні значення відкидаються', () => {
   assert.deepEqual(normalizeFieldErrors({ Email: 'Невірний email', x: [''], y: null }), { email: ['Невірний email'] });
 });
-
-// ---------- 4. Мережеві збої та текст для користувача ----------
 
 test('таймаут: запит не висить вічно, а закінчується ApiError(timeout)', async () => {
   const { api } = setup((url, init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))), { timeoutMs: 30 });
@@ -176,8 +167,6 @@ test('503 від шлюзу: показується зрозуміле укра�
   await assert.rejects(api.get('/x'), (e) => e.kind === Kind.UNAVAILABLE && userMessage(e).startsWith('Не вдалося отримати'));
 });
 
-// ---------- 5. Токен додається автоматично, userId не надсилається ----------
-
 test('Authorization додається автоматично; вхід іде без токена', async () => {
   const { api, calls } = setup(() => json(200, {}));
 
@@ -188,17 +177,15 @@ test('Authorization додається автоматично; вхід іде �
   assert.equal(calls[1].init.headers.Authorization, undefined);
 });
 
-// ---------- 6. Idempotency-Key ----------
-
 test('Idempotency-Key: після мережевої помилки той самий ключ, після відповіді сервера — новий', () => {
   let n = 0;
   const attempt = createAttempt(() => `key-${++n}`);
 
   const first = attempt.keyFor({ workoutId: 5 });
-  attempt.settle({ outcomeUnknown: true });   // мережа/таймаут: невідомо, чи дійшов запит
+  attempt.settle({ outcomeUnknown: true });
   assert.equal(attempt.keyFor({ workoutId: 5 }), first);
 
-  attempt.settle({ outcomeUnknown: false });  // сервер відповів визначено (409, 201…)
+  attempt.settle({ outcomeUnknown: false });
   assert.notEqual(attempt.keyFor({ workoutId: 5 }), first);
 });
 

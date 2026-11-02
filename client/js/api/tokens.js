@@ -1,4 +1,4 @@
-﻿
+
 const KEY = 'sportclub.tokens';
 
 export function createTokenStore(storage = safeStorage()) {
@@ -25,13 +25,13 @@ export function createTokenStore(storage = safeStorage()) {
 
     set({ accessToken, refreshToken, expiresAt }) {
       memory = { accessToken, refreshToken, expiresAt };
-      try { storage?.setItem(KEY, JSON.stringify(memory)); } catch { /* пам'яті достатньо */ }
+      try { storage?.setItem(KEY, JSON.stringify(memory)); } catch {  }
       notify();
     },
 
     clear() {
       memory = null;
-      try { storage?.removeItem(KEY); } catch { /* нічого */ }
+      try { storage?.removeItem(KEY); } catch {  }
       notify();
     },
 
