@@ -84,7 +84,6 @@ public sealed class WorkoutService(
             ? Outcome<bool>.NoContent()
             : WorkoutNotFound(id).To<bool>();
 
-    // Порядок перевірок, як у моноліті: тренер → каталог → валідація.
     private async Task<(Workout? Workout, Failure? Failure)> BuildAsync(WorkoutRequest request, CancellationToken ct)
     {
         DirectoryUser? coach;

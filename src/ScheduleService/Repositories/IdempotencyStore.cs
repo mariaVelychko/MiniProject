@@ -19,7 +19,6 @@ public sealed class IdempotencyStore(ScheduleDbContext db) : IIdempotencyStore
         }
         catch (DbUpdateException)
         {
-            // Паралельний запит із тим самим ключем уже зберіг відповідь — це нормально.
             db.Entry(record).State = EntityState.Detached;
         }
     }

@@ -111,7 +111,6 @@ public static class MyBookingsEndpoints
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
-            // нечитабельне тіло — те саме, що порожнє: помилка валідації нижче
         }
 
         var key = ctx.Request.Headers["Idempotency-Key"].ToString().Trim();

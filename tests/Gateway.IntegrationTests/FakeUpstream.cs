@@ -34,7 +34,6 @@ public sealed class FakeUpstream : IAsyncDisposable
         Port = new Uri(_app.Urls.First()).Port;
     }
 
-    // ---------- керування з тестів ----------
 
     /// <summary>Скинути лічильники й збої перед кожним тестом.</summary>
     public FakeUpstream Reset()
@@ -45,7 +44,7 @@ public sealed class FakeUpstream : IAsyncDisposable
         _seen.Clear();
         _bookingKeys.Clear();
         _booked.Clear();
-        _booked[(1, 501)] = true;   // у клієнтки «Анна» (id 501 у довіднику моноліту) уже є запис на тренування 1
+        _booked[(1, 501)] = true;
         return this;
     }
 
@@ -65,7 +64,6 @@ public sealed class FakeUpstream : IAsyncDisposable
 
     public string Seen(string key) => _seen.GetValueOrDefault(key, string.Empty);
 
-    // ---------- «сервіси» ----------
 
     private async Task<bool> EnterAsync(string name)
     {
@@ -83,7 +81,6 @@ public sealed class FakeUpstream : IAsyncDisposable
     {
         _app.MapGet("/health", async () => await EnterAsync("health") ? Results.StatusCode(500) : Results.Ok());
 
-        // Catalog
         _app.MapGet("/api/v1/catalog/items/{id:int}", async (int id) =>
         {
             if (await EnterAsync("catalog"))
@@ -115,7 +112,6 @@ public sealed class FakeUpstream : IAsyncDisposable
             return Results.Created("/api/v1/catalog/items/9", new { id = 9 });
         });
 
-        // Auth
         _app.MapPost("/api/v1/auth/login", async () =>
         {
             await EnterAsync("login");
@@ -138,7 +134,6 @@ public sealed class FakeUpstream : IAsyncDisposable
             return Results.Json(new { id = userId, email = $"{displayName.ToLowerInvariant()}@test.ua", displayName, createdAt = "2026-10-01T10:00:00", roles = new[] { role } });
         });
 
-        // Schedule (і заодно моноліт: у шлюзі це різні маршрути, у стенді — один сервер)
         _app.MapGet("/api/workouts", async (HttpRequest request) =>
         {
             if (await EnterAsync("schedule"))
@@ -146,7 +141,6 @@ public sealed class FakeUpstream : IAsyncDisposable
                 return Results.StatusCode(503);
             }
 
-            // Для позиції каталогу 2 тренувань немає: сервіс ВІДПОВІДАЄ порожнім списком (це не збій).
             if (request.Query["catalogItemId"] == "2")
             {
                 return Results.Json(Array.Empty<object>());
@@ -162,7 +156,6 @@ public sealed class FakeUpstream : IAsyncDisposable
             });
         });
 
-        // Моноліт: довідник людей. Id в довіднику (501) НЕ збігається з id в Auth (7) — як у справжній системі.
         _app.MapGet("/api/users", async (HttpRequest request) =>
         {
             if (await EnterAsync("users"))
@@ -176,7 +169,6 @@ public sealed class FakeUpstream : IAsyncDisposable
             });
         });
 
-        // Schedule: записи клієнта
         _app.MapGet("/api/bookings/client/{clientId:int}", async (int clientId) =>
         {
             _seen["bookings:clientId"] = clientId.ToString();
@@ -248,7 +240,6 @@ public sealed class FakeUpstream : IAsyncDisposable
                 : Results.Json(new { message = "Клієнт не записаний на це тренування" }, statusCode: 404);
         });
 
-        // Допоміжні маршрути для перевірки проксі (йдуть через резервний маршрут /api/{everything})
         _app.MapGet("/api/echo", (HttpRequest request) =>
         {
             _calls.AddOrUpdate("echo", 1, (_, v) => v + 1);

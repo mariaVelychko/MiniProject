@@ -77,7 +77,6 @@ internal static class UpstreamHttp
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or NotSupportedException)
         {
-            // OperationCanceledException тут — це таймаут HttpClient (дедлайн), а не скасування клієнтом.
             log.LogWarning("{Service}: не вдалося виконати GET {Url}: {Reason}", service, url, ex.GetType().Name);
             return Upstream<T>.Unavailable();
         }

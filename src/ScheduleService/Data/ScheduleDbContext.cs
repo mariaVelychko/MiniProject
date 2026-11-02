@@ -23,7 +23,6 @@ public class ScheduleDbContext(DbContextOptions<ScheduleDbContext> options) : Db
             e.HasIndex(w => w.CoachId);
             e.HasIndex(w => w.CatalogItemId);
 
-            // Єдиний FK — усередині власної БД. Жодних зв'язків із users/catalog.
             e.HasMany(w => w.Bookings)
                 .WithOne()
                 .HasForeignKey(x => x.WorkoutId)

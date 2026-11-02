@@ -5,7 +5,6 @@ using Microsoft.Extensions.Options;
 
 namespace ApiGateway.Clients;
 
-// ---------- Catalog ----------
 
 /// <summary>Об'єкт каталогу (лише потрібні шлюзу поля; решта відповіді ігнорується).</summary>
 public sealed record CatalogItem(int Id, string Title, string Description, decimal Price, int DurationMin, int Capacity,
@@ -36,7 +35,7 @@ public sealed class CatalogClient(HttpClient http, IMemoryCache cache, CatalogCa
         }
 
         stats.Miss();
-        var token = region.GetToken(); // до запиту: див. коментар у CatalogCacheMiddleware
+        var token = region.GetToken();
 
         var result = await UpstreamHttp.GetAsync<CatalogItem>(http, $"api/v1/catalog/items/{id}", log, "Catalog", ct);
 
@@ -50,7 +49,6 @@ public sealed class CatalogClient(HttpClient http, IMemoryCache cache, CatalogCa
     }
 }
 
-// ---------- Schedule ----------
 
 /// <summary>Сеанс (тренування) у тому вигляді, в якому його віддає Schedule.</summary>
 public sealed record ScheduleSession(int Id, DateTime Time, int DurationMin, string Hall, string CoachName,
@@ -68,7 +66,6 @@ public sealed class ScheduleClient(HttpClient http, ILogger<ScheduleClient> log)
         UpstreamHttp.GetAsync<List<ScheduleSession>>(http, $"api/workouts?catalogItemId={catalogItemId}", log, "Schedule", ct);
 }
 
-// ---------- Auth ----------
 
 public sealed record UserProfile(int Id, string Email, string DisplayName, IReadOnlyList<string> Roles);
 
@@ -85,7 +82,6 @@ public sealed class AuthClient(HttpClient http, ILogger<AuthClient> log) : IAuth
             HttpStatusCode.NotFound, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden);
 }
 
-// ---------- спільне ----------
 
 /// <summary>Прокидає X-Correlation-Id із вхідного запиту у вихідні виклики до сервісів.</summary>
 public sealed class CorrelationIdHandler(IHttpContextAccessor accessor) : DelegatingHandler

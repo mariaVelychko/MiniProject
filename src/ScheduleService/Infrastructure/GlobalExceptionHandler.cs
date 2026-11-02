@@ -10,7 +10,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log) 
     {
         if (exception is OperationCanceledException && context.RequestAborted.IsCancellationRequested)
         {
-            return true; // клієнт розірвав з'єднання — відповідати нікому
+            return true;
         }
 
         log.LogError(exception, "Необроблений виняток під час {Method} {Path}",

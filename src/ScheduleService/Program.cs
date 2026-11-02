@@ -15,7 +15,6 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScheduleSwagger();
 
-// Рядок підключення читається під час першого використання DbContext, тож тести можуть підмінити його через конфігурацію.
 builder.Services.AddDbContext<ScheduleDbContext>((sp, options) =>
 {
     var cs = sp.GetRequiredService<IConfiguration>().GetConnectionString("ScheduleDb");
@@ -42,7 +41,7 @@ builder.Services.AddHttpClient<ICatalogClient, CatalogClient>((sp, client) =>
     {
         var cfg = sp.GetRequiredService<IConfiguration>();
         client.BaseAddress = new Uri(cfg["Services:Catalog:BaseUrl"] ?? "http://localhost:5002");
-        client.Timeout = TimeSpan.FromSeconds(10); // «страхувальний» ліміт; робочий дедлайн — у CatalogClient
+        client.Timeout = TimeSpan.FromSeconds(10);
     })
     .AddHttpMessageHandler<CorrelationIdHandler>();
 
@@ -64,7 +63,6 @@ app.UseSwaggerUI();
 
 app.MapControllers();
 
-// /health перевіряє власну БД і доступність обох сусідів (Catalog, моноліт — довідник користувачів).
 app.MapGet("/health", async (ScheduleDbContext db, ICatalogClient catalog, IUserDirectoryClient users, CancellationToken ct) =>
 {
     var dbOk = await SafeAsync(() => db.Database.CanConnectAsync(ct));
@@ -123,5 +121,4 @@ static async Task<bool> TryInitializeDatabaseAsync(WebApplication app)
     }
 }
 
-// Потрібно для WebApplicationFactory<Program> в інтеграційних тестах.
 public partial class Program;

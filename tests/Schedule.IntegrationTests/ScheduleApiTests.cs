@@ -27,7 +27,6 @@ public class ScheduleApiTests(ApiFixture fixture)
     private ApiFactory Api => fixture.Factory;
     private HttpClient NewClient() => Api.CreateClient();
 
-    // ---------- helpers ----------
 
     private static WorkoutRequest Req(int item = 1, int coach = 1, string hall = "Зал 1", int? max = null,
         DateTime? time = null) => new(item, time ?? new DateTime(2026, 11, 1, 18, 0, 0), hall, coach, null, max);
@@ -77,7 +76,6 @@ public class ScheduleApiTests(ApiFixture fixture)
         return await action(scope.ServiceProvider.GetRequiredService<ScheduleDbContext>());
     }
 
-    // ---------- 1. створення з коректними даними ----------
 
     [Fact]
     public async Task CreateWorkout_Valid_Returns201_Location_Body_AndDbRow()
@@ -93,8 +91,8 @@ public class ScheduleApiTests(ApiFixture fixture)
         Assert.EndsWith($"/api/workouts/{id}", resp.Headers.Location!.ToString());
         Assert.Equal("Йога для початківців", body.GetProperty("type").GetString());
         Assert.Equal("2026-11-01T18:00:00", body.GetProperty("time").GetString());
-        Assert.Equal(60, body.GetProperty("durationMin").GetInt32());       // з каталогу
-        Assert.Equal(12, body.GetProperty("maxParticipants").GetInt32());   // з каталогу
+        Assert.Equal(60, body.GetProperty("durationMin").GetInt32());
+        Assert.Equal(12, body.GetProperty("maxParticipants").GetInt32());
         Assert.Equal(2, body.GetProperty("coachId").GetInt32());
         Assert.Equal("Тренер 2", body.GetProperty("coachName").GetString());
         Assert.Equal(0, body.GetProperty("participants").GetInt32());
@@ -102,11 +100,10 @@ public class ScheduleApiTests(ApiFixture fixture)
 
         var row = await WithDb(db => db.Workouts.AsNoTracking().SingleAsync(w => w.Id == id));
         Assert.Equal("Йога для початківців", row.Type);
-        Assert.Equal(250m, row.PriceSnapshot);   // знімок ціни на момент створення
-        Assert.True(row.CreatedAt > DateTime.UtcNow.AddMinutes(-5));   // час створення — UTC
+        Assert.Equal(250m, row.PriceSnapshot);
+        Assert.True(row.CreatedAt > DateTime.UtcNow.AddMinutes(-5));
     }
 
-    // ---------- 2. без токена: моноліт не вимагав токена — поведінка збережена ----------
 
     [Fact]
     public async Task Book_WithoutToken_OrWithGarbageToken_Works_LikeMonolith()
@@ -122,7 +119,6 @@ public class ScheduleApiTests(ApiFixture fixture)
         Assert.Equal(HttpStatusCode.OK, garbage.StatusCode);
     }
 
-    // ---------- запис: щасливий шлях ----------
 
     [Fact]
     public async Task Book_Valid_Returns200_WithWorkoutBody()
@@ -141,10 +137,9 @@ public class ScheduleApiTests(ApiFixture fixture)
 
         var row = await WithDb(db => db.Bookings.AsNoTracking().SingleAsync(b => b.WorkoutId == w.Id));
         Assert.Equal(30, row.ClientId);
-        Assert.Equal("Клієнт 30", row.ClientFullName);   // знімок даних клієнта
+        Assert.Equal("Клієнт 30", row.ClientFullName);
     }
 
-    // ---------- 3. неіснуючі об'єкти: коди й тексти як у моноліті ----------
 
     [Fact]
     public async Task Book_UnknownWorkout_Returns404_WithMessage() =>
@@ -183,7 +178,6 @@ public class ScheduleApiTests(ApiFixture fixture)
         await AssertMessage(await NewClient().PostAsJsonAsync("/api/workouts", Req(coach: 999)),
             HttpStatusCode.BadRequest, "Тренера 999 не знайдено");
 
-    // ---------- 4. бізнес-правила ----------
 
     [Fact]
     public async Task CreateWorkout_BlankHall_Returns400_WithMessage() =>
@@ -240,7 +234,6 @@ public class ScheduleApiTests(ApiFixture fixture)
         Assert.Equal(1, await WithDb(db => db.Bookings.CountAsync(b => b.WorkoutId == w.Id)));
     }
 
-    // ---------- 5. ідемпотентність ----------
 
     [Fact]
     public async Task Book_SameIdempotencyKey_ReturnsSameResponse_AndCreatesOneBooking()
@@ -253,7 +246,7 @@ public class ScheduleApiTests(ApiFixture fixture)
         var second = await BookAsync(c, w.Id, 50, key);
 
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, second.StatusCode);   // без ключа тут було б 409
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
         Assert.Equal(await first.Content.ReadAsStringAsync(), await second.Content.ReadAsStringAsync());
         Assert.True(second.Headers.Contains("Idempotency-Replayed"));
         Assert.Equal(1, await WithDb(db => db.Bookings.CountAsync(b => b.WorkoutId == w.Id)));
@@ -294,7 +287,6 @@ public class ScheduleApiTests(ApiFixture fixture)
         Assert.Equal(1, await WithDb(db => db.Workouts.CountAsync(w => w.Hall == req.Hall)));
     }
 
-    // ---------- 6/7. читання ----------
 
     [Fact]
     public async Task GetWorkout_Returns200_WithSameFields_And404ForUnknown()
@@ -348,7 +340,6 @@ public class ScheduleApiTests(ApiFixture fixture)
         Assert.Equal(new[] { early.Id, late.Id }, arr.Select(e => e.GetProperty("id").GetInt32()).ToArray());
     }
 
-    // ---------- 8. скасування ----------
 
     [Fact]
     public async Task Cancel_RemovesBooking_RepeatReturns404()
@@ -370,7 +361,6 @@ public class ScheduleApiTests(ApiFixture fixture)
             HttpStatusCode.NotFound, "Тренування 999999 не знайдено");
     }
 
-    // ---------- 9. сусіди недоступні ----------
 
     [Fact]
     public async Task CatalogDown_CreateReturns503_ServiceStaysAlive()
@@ -384,7 +374,6 @@ public class ScheduleApiTests(ApiFixture fixture)
             await AssertMessage(await c.PostAsJsonAsync("/api/workouts", Req()),
                 HttpStatusCode.ServiceUnavailable, "Каталог типів тренувань недоступний. Спробуйте пізніше.");
 
-            // читання й записи, що не потребують каталогу, працюють
             Assert.Equal(HttpStatusCode.OK, (await c.GetAsync($"/api/workouts/{w.Id}")).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await BookAsync(c, w.Id, 90)).StatusCode);
 
@@ -427,16 +416,15 @@ public class ScheduleApiTests(ApiFixture fixture)
         Assert.Equal("ok", body.GetProperty("dependencies").GetProperty("database").GetString());
     }
 
-    // ---------- 10. список із фільтром і сортуванням ----------
 
     [Fact]
     public async Task List_FilteredByCoachAndItem_IsSortedByTime()
     {
-        var c = NewClient();   // тренер 9 і позиція 7 використовуються лише в цьому тесті
+        var c = NewClient();
         var t3 = await CreateWorkoutAsync(c, Req(item: 7, coach: 9, time: new DateTime(2027, 1, 3, 9, 0, 0)));
         var t1 = await CreateWorkoutAsync(c, Req(item: 7, coach: 9, time: new DateTime(2027, 1, 1, 9, 0, 0)));
         var t2 = await CreateWorkoutAsync(c, Req(item: 7, coach: 9, time: new DateTime(2027, 1, 2, 9, 0, 0)));
-        await CreateWorkoutAsync(c, Req(item: 6, coach: 9));   // інший тип — у вибірку не потрапляє
+        await CreateWorkoutAsync(c, Req(item: 6, coach: 9));
 
         var resp = await c.GetAsync("/api/workouts?coachId=9&catalogItemId=7");
 
@@ -446,7 +434,6 @@ public class ScheduleApiTests(ApiFixture fixture)
         Assert.Equal(new[] { t1.Id, t2.Id, t3.Id }, arr.Select(e => e.GetProperty("id").GetInt32()).ToArray());
     }
 
-    // ---------- редагування / видалення ----------
 
     [Fact]
     public async Task Update_Valid_Returns200_And_CapacityBelowBooked_Returns409()

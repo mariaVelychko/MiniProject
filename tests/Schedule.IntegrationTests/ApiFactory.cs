@@ -53,7 +53,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // Мережевих сусідів у тестах немає: підставляємо стаби з відомими відповідями.
             services.RemoveAll<ICatalogClient>();
             services.RemoveAll<IUserDirectoryClient>();
             services.AddSingleton<ICatalogClient>(Catalog);

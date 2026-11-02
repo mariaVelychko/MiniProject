@@ -4,7 +4,6 @@ using System.Text.Json;
 
 namespace ApiGateway.Clients;
 
-// ---------- Довідник людей (моноліт) ----------
 
 /// <summary>Людина з довідника моноліту (лише поля, потрібні шлюзу).</summary>
 public sealed record DirectoryPerson(int Id, string FullName, string Email, string Role);
@@ -34,7 +33,6 @@ public sealed class PersonDirectory(HttpClient http, ILogger<PersonDirectory> lo
     }
 }
 
-// ---------- Записи (Schedule) ----------
 
 /// <summary>Тренування, на яке записаний клієнт (відповідь Schedule «як є»; зайве ігнорується).</summary>
 public sealed record BookedWorkout(int Id, int? CatalogItemId, string Type, DateTime Time, int DurationMin, string Hall,
@@ -156,7 +154,6 @@ public sealed class BookingsClient(HttpClient http, ILogger<BookingsClient> log)
         }
         catch (Exception ex) when (ex is JsonException or HttpRequestException or NotSupportedException)
         {
-            // тіла немає або воно не JSON — повідомлення додасть шлюз
         }
 
         return null;

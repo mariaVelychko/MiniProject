@@ -18,7 +18,6 @@ public sealed class GatewayApiTests
 
     public GatewayApiTests(UpstreamFixture upstream) => _fake = upstream.Fake.Reset();
 
-    // ---------- допоміжне ----------
 
     private static HttpClient ClientFor(GatewayFactory gateway, int? userId = null, string name = "Анна", string role = "Client")
     {
@@ -48,7 +47,6 @@ public sealed class GatewayApiTests
         return body;
     }
 
-    // ---------- 1–2. Складений ендпоінт ----------
 
     [Fact]
     public async Task Screen_AllServicesAvailable_ReturnsComposedScreen()
@@ -85,7 +83,6 @@ public sealed class GatewayApiTests
     [Fact]
     public async Task Screen_CallsServicesInParallel_NotOneByOne()
     {
-        // Кожен із трьох сервісів відповідає за 600 мс: послідовно було б ≥ 1800 мс, паралельно — близько 600.
         _fake.Delay("catalog", 600);
         _fake.Delay("schedule", 600);
         _fake.Delay("auth", 600);
@@ -101,7 +98,6 @@ public sealed class GatewayApiTests
         Assert.InRange(timer.ElapsedMilliseconds, 500, 1500);
     }
 
-    // ---------- 3. Один сервіс не відповів ----------
 
     [Fact]
     public async Task Screen_ScheduleDown_ReturnsPartialResponse_WithExplicitMarker()
@@ -117,8 +113,8 @@ public sealed class GatewayApiTests
         Assert.Equal("true", response.Headers.GetValues("X-Partial-Response").Single());
 
         var body = await JsonOf(response);
-        Assert.Equal(JsonValueKind.Null, body.GetProperty("sessions").ValueKind);   // не [] і не пропущено: саме null...
-        Assert.True(body.GetProperty("partial").GetBoolean());                      // ...і клієнт бачить, чому
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("sessions").ValueKind);
+        Assert.True(body.GetProperty("partial").GetBoolean());
         Assert.Equal("sessions", body.GetProperty("unavailable")[0].GetString());
         Assert.Equal("Йога для початківців", body.GetProperty("item").GetProperty("title").GetString());
         Assert.Equal("Анна", body.GetProperty("me").GetProperty("displayName").GetString());
@@ -127,7 +123,6 @@ public sealed class GatewayApiTests
     [Fact]
     public async Task Screen_NoSessions_IsEmptyList_NotUnavailable()
     {
-        // Сервіс відповів порожнім списком («тренувань немає») — це НЕ те саме, що «сервіс недоступний».
         using var gateway = new GatewayFactory();
         var client = ClientFor(gateway, userId: 7);
 
@@ -167,7 +162,7 @@ public sealed class GatewayApiTests
         timer.Stop();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.InRange(timer.ElapsedMilliseconds, 900, 2500);   // дедлайн 1 с, а не 3 с очікування сервісу
+        Assert.InRange(timer.ElapsedMilliseconds, 900, 2500);
 
         var body = await JsonOf(response);
         Assert.Equal("sessions", body.GetProperty("unavailable")[0].GetString());
@@ -195,7 +190,6 @@ public sealed class GatewayApiTests
         await AssertProblem(await client.GetAsync("/api/v1/screens/training/404"), HttpStatusCode.NotFound);
     }
 
-    // ---------- 4. Автентифікація на шлюзі ----------
 
     [Fact]
     public async Task Screen_WithoutToken_Returns401Problem_AndNothingReachesServices()
@@ -266,7 +260,6 @@ public sealed class GatewayApiTests
     [Fact]
     public async Task ServiceOwnErrors_PassThroughUnchanged_NotReplacedWithProblem()
     {
-        // Відповідь самого сервісу (409 з {"message": ...}) шлюз не чіпає: поведінка маршрутів не змінюється.
         using var gateway = new GatewayFactory();
         var client = ClientFor(gateway);
 
@@ -277,14 +270,12 @@ public sealed class GatewayApiTests
         Assert.Equal("Вільних місць немає", (await JsonOf(response)).GetProperty("message").GetString());
     }
 
-    // ---------- 4а. Ідентифікатор користувача лише з токена ----------
 
     [Fact]
     public async Task UserIdHeader_FromClient_IsIgnored_ValueComesFromToken()
     {
         using var gateway = new GatewayFactory();
 
-        // анонім намагається підставити чужий ідентифікатор і роль
         var anonymous = ClientFor(gateway);
         anonymous.DefaultRequestHeaders.Add("X-User-Id", "999");
         anonymous.DefaultRequestHeaders.Add("X-User-Roles", "Admin");
@@ -292,7 +283,6 @@ public sealed class GatewayApiTests
         Assert.Equal(string.Empty, anonymousEcho.GetProperty("userId").GetString());
         Assert.Equal(string.Empty, anonymousEcho.GetProperty("roles").GetString());
 
-        // авторизований (user 7) теж не може підмінити себе на 999
         var authorized = ClientFor(gateway, userId: 7, role: "Client");
         authorized.DefaultRequestHeaders.Add("X-User-Id", "999");
         authorized.DefaultRequestHeaders.Add("X-User-Roles", "Admin");
@@ -301,7 +291,6 @@ public sealed class GatewayApiTests
         Assert.Equal("Client", authorizedEcho.GetProperty("roles").GetString());
     }
 
-    // ---------- 5. Кеш ----------
 
     [Fact]
     public async Task Catalog_RepeatedRequest_IsServedFromCache_ServiceCalledOnce()
@@ -325,8 +314,8 @@ public sealed class GatewayApiTests
         var client = ClientFor(gateway);
 
         await client.GetAsync("/api/v1/catalog/items?page=1");
-        await client.GetAsync("/api/v1/catalog/items?page=2");   // інша сторінка — інший ключ, інший виклик сервісу
-        await client.GetAsync("/api/v1/catalog/items?page=1");   // повтор — з кешу
+        await client.GetAsync("/api/v1/catalog/items?page=2");
+        await client.GetAsync("/api/v1/catalog/items?page=1");
 
         Assert.Equal(2, _fake.Calls("catalog-list"));
     }
@@ -347,7 +336,7 @@ public sealed class GatewayApiTests
 
         var afterChange = await anonymous.GetAsync("/api/v1/catalog/items/1");
         Assert.Equal("MISS", afterChange.Headers.GetValues("X-Cache").Single());
-        Assert.Equal(2, _fake.Calls("catalog"));   // клієнт одразу бачить нове, а не чекає закінчення TTL
+        Assert.Equal(2, _fake.Calls("catalog"));
     }
 
     [Fact]
@@ -360,13 +349,11 @@ public sealed class GatewayApiTests
         var annaScreen = await JsonOf(await anna.GetAsync("/api/v1/screens/training/1"));
         var bohdanScreen = await JsonOf(await bohdan.GetAsync("/api/v1/screens/training/1"));
 
-        // кожен отримав СВОЇ персональні дані...
         Assert.Equal("Анна", annaScreen.GetProperty("me").GetProperty("displayName").GetString());
         Assert.Equal(7, annaScreen.GetProperty("me").GetProperty("id").GetInt32());
         Assert.Equal("Богдан", bohdanScreen.GetProperty("me").GetProperty("displayName").GetString());
         Assert.Equal(8, bohdanScreen.GetProperty("me").GetProperty("id").GetInt32());
 
-        // ...спільний каталог узято з кешу (1 виклик на двох), а персональні й розклад — свіжі щоразу
         Assert.Equal(1, _fake.Calls("catalog"));
         Assert.Equal(2, _fake.Calls("auth"));
         Assert.Equal(2, _fake.Calls("schedule"));
@@ -387,7 +374,6 @@ public sealed class GatewayApiTests
         Assert.Equal(2, _fake.Calls("auth"));
     }
 
-    // ---------- 6. Обмеження частоти ----------
 
     [Fact]
     public async Task RateLimit_AnonymousOverLimit_Returns429_WithRetryAfterAndProblem()
@@ -423,9 +409,8 @@ public sealed class GatewayApiTests
         await AssertProblem(limited, HttpStatusCode.TooManyRequests);
         Assert.True(limited.Headers.Contains("Retry-After"));
 
-        // читання каталогу тим самим клієнтом лишається доступним — ліміти розділені
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/v1/catalog/items/1")).StatusCode);
-        Assert.Equal(2, _fake.Calls("login"));   // третя спроба до Auth навіть не дійшла
+        Assert.Equal(2, _fake.Calls("login"));
     }
 
     [Fact]
@@ -444,16 +429,14 @@ public sealed class GatewayApiTests
         Assert.Equal(HttpStatusCode.OK, (await anna.GetAsync("/api/echo")).StatusCode);
         await AssertProblem(await anna.GetAsync("/api/echo"), HttpStatusCode.TooManyRequests);
 
-        // Анна вичерпала свій ліміт — Богдан із тієї самої адреси його не відчуває
         Assert.Equal(HttpStatusCode.OK, (await bohdan.GetAsync("/api/echo")).StatusCode);
     }
 
-    // ---------- 7. Таймаути проксі, health, документація ----------
 
     [Fact]
     public async Task Proxy_ServiceTooSlow_Returns504Problem_AfterTimeout_NotAfterServiceFinishes()
     {
-        using var gateway = new GatewayFactory(o => o.Timeouts.ProxySeconds = 1);   // сервіс «думає» 4 с
+        using var gateway = new GatewayFactory(o => o.Timeouts.ProxySeconds = 1);
         var client = ClientFor(gateway);
 
         var timer = Stopwatch.StartNew();

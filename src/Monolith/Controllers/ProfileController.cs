@@ -28,7 +28,6 @@ public class ProfileController : ControllerBase
             return NotFound(new ErrorResponse($"Користувача {userId} не знайдено"));
         }
 
-        // Після ЛР2 розклад і записи належать Schedule-сервісу: профіль збирається мережевим викликом.
         try
         {
             var own = person is Trainer trainer

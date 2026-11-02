@@ -93,7 +93,6 @@ public sealed class CatalogCacheMiddleware(RequestDelegate next, IMemoryCache ca
         {
             await next(ctx);
 
-            // Зміна пройшла успішно — стара копія каталогу більше не правдива.
             if (ctx.Response.StatusCode is >= 200 and < 300 && !HttpMethods.IsHead(request.Method) && !HttpMethods.IsOptions(request.Method))
             {
                 region.Invalidate();
@@ -118,7 +117,6 @@ public sealed class CatalogCacheMiddleware(RequestDelegate next, IMemoryCache ca
 
         stats.Miss();
 
-        // Токен беремо ДО запиту: якщо під час запиту хтось змінить каталог, застаріла відповідь у кеш не потрапить.
         var token = region.GetToken();
         var original = ctx.Response.Body;
         await using var buffer = new MemoryStream();

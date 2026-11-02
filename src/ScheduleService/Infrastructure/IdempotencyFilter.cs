@@ -23,7 +23,6 @@ public sealed class IdempotencyFilter(
     public const string ReplayHeader = "Idempotency-Replayed";
     private const int MaxKeyLength = 128;
 
-    // Захист від паралельних запитів з одним ключем (в межах одного процесу).
     private static readonly SemaphoreSlim[] Gates =
         Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
 

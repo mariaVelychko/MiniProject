@@ -48,12 +48,12 @@ public sealed class MyBookingsTests
     {
         using var gateway = new GatewayFactory();
         var client = Client(gateway);
-        _fake.Seed(9, 501);   // ще й давнє тренування (час у минулому)
+        _fake.Seed(9, 501);
 
         var response = await client.GetAsync("/api/v1/me/bookings");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("501", _fake.Seen("bookings:clientId"));   // не 7: це id з довідника, а не з Auth
+        Assert.Equal("501", _fake.Seen("bookings:clientId"));
 
         var items = await JsonOf(response);
         Assert.Equal(2, items.GetArrayLength());
@@ -107,7 +107,6 @@ public sealed class MyBookingsTests
         using var gateway = new GatewayFactory();
         var client = Client(gateway);
 
-        // Клієнт «підсовує» чужий clientId — шлюз його ігнорує.
         var response = await client.SendAsync(Post(new { workoutId = 5, clientId = 999, userId = 999 }, "key-1"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);

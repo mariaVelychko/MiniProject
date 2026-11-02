@@ -62,8 +62,6 @@ public static class TrainingScreenEndpoint
         var header = ctx.Request.Headers.Authorization.ToString();
         var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..].Trim() : string.Empty;
 
-        // Паралельно: загальний час — за найповільнішим викликом, а не сума трьох. Кожен клієнт сам обробляє збої
-        // свого сервісу й повертає Upstream, тож WhenAll не впаде через один недоступний сервіс.
         var itemTask = catalog.GetItemAsync(itemId, ct);
         var sessionsTask = schedule.GetSessionsAsync(itemId, ct);
         var meTask = auth.GetMeAsync(token, ct);

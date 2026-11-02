@@ -73,7 +73,6 @@ public sealed class WorkoutRepository(ScheduleDbContext db, TimeProvider clock) 
 
     public async Task<bool> DeleteAsync(int id, CancellationToken ct)
     {
-        // Записи видаляються каскадно на рівні БД (FK Bookings -> Workouts, ON DELETE CASCADE).
         var deleted = await db.Workouts.Where(w => w.Id == id).ExecuteDeleteAsync(ct);
         return deleted > 0;
     }

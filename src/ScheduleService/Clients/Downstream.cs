@@ -36,11 +36,10 @@ internal static class Downstream
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            throw; // клієнт сам скасував запит — це не збій сусіда
+            throw;
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or NotSupportedException)
         {
-            // OperationCanceledException без ct.IsCancellationRequested == спрацював наш дедлайн
             throw unavailable($"Сусідній сервіс недоступний або відповів надто довго ({url})", ex);
         }
     }

@@ -44,7 +44,6 @@ public static class Problems
     public static Task WriteAsync(HttpContext ctx, int status, string title, string? detail = null,
         IDictionary<string, object?>? extensions = null, CancellationToken ct = default)
     {
-        // Content-Length міг лишитися від сурогатної відповіді Ocelot — він зламав би запис тіла.
         ctx.Response.ContentLength = null;
         ctx.Response.StatusCode = status;
 

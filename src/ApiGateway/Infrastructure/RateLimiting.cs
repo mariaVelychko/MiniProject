@@ -31,7 +31,6 @@ public static class RateLimiting
     {
         services.AddRateLimiter(_ => { });
 
-        // Налаштування читаються лише під час першого запиту (IOptions) — тести можуть підмінити ліміти.
         services.AddOptions<RateLimiterOptions>().Configure<IOptions<GatewayOptions>>((limiter, gateway) =>
         {
             var rl = gateway.Value.RateLimits;

@@ -10,8 +10,6 @@ const string CorrelationHeader = Correlation.Header;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.SetBasePath(builder.Environment.ContentRootPath).AddOcelot();
 
-// Адреси сусідів можна перекрити конфігурацією: Services:{Auth|Catalog|Monolith|Schedule}:Host / :Port
-// (а також старі Monolith:Host / Monolith:Port). Перекривається лише маршрут, чий типовий порт належить цьому сервісу.
 var portToService = new Dictionary<string, string>
 {
     ["5001"] = "Auth", ["5002"] = "Catalog", ["5100"] = "Monolith", ["5102"] = "Schedule",
@@ -47,11 +45,9 @@ builder.Configuration.AddInMemoryCollection(overrides);
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["*"])
     .AllowAnyHeader().AllowAnyMethod()
-    // Браузерний клієнт бачить лише «безпечні» заголовки відповіді — решту (зокрема Retry-After для 429) треба дозволити явно.
     .WithExposedHeaders(CorrelationHeader, "Retry-After", "X-Partial-Response", "X-Cache", "Idempotency-Replayed")));
 builder.Services.AddOcelot(builder.Configuration);
 
-// ЛР3: складений ендпоінт, кеш, ліміти, таймаути (GatewayServices), перевірка JWT на шлюзі та Swagger.
 builder.Services.AddGateway(builder.Configuration);
 builder.Services.AddGatewayAuthentication();
 builder.Services.AddGatewaySwagger();
@@ -61,7 +57,6 @@ var log = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Gatewa
 
 app.UseCors();
 
-// Кореляційний id + журнал запиту. Токени й тіла запитів у журнал не потрапляють.
 app.Use(async (context, next) =>
 {
     var correlationId = context.Request.Headers[CorrelationHeader].FirstOrDefault();
@@ -89,17 +84,15 @@ app.UseSwagger();
 app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "ApiGateway v1"));
 
 app.UseRouting();
-app.UseAuthentication();     // токен перевіряється один раз, тут
-app.UseRateLimiter();        // після автентифікації: авторизованих рахуємо за користувачем, анонімів — за IP
+app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
-app.UseMiddleware<IdentityHeadersMiddleware>();   // X-User-Id / X-User-Roles лише з токена; клієнтські — видаляються
+app.UseMiddleware<IdentityHeadersMiddleware>();
 
-// Власні ендпоінти шлюзу (складені екрани, health, метрики кешу).
 app.MapTrainingScreen();
 app.MapGatewayEndpoints();
-app.MapMyBookings();     // ЛР4: записи користувача від імені токена (клієнт не надсилає userId)
+app.MapMyBookings();
 
-// Усе, що не є власним ендпоінтом шлюзу, проксіюється Ocelot: захист маршрутів → кеш каталогу → таймаут → Ocelot.
 app.UseWhen(context => context.GetEndpoint() is null, branch =>
 {
     branch.UseMiddleware<ProtectedRoutesMiddleware>();
@@ -110,5 +103,4 @@ app.UseWhen(context => context.GetEndpoint() is null, branch =>
 
 await app.RunAsync();
 
-// Потрібен інтеграційним тестам (WebApplicationFactory<Program>).
 public partial class Program;

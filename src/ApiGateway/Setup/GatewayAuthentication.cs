@@ -24,8 +24,6 @@ public static class GatewayAuthentication
 
                 if (string.IsNullOrWhiteSpace(key))
                 {
-                    // Публічні маршрути (розклад, читання каталогу) мають працювати й без ключа, тож не падаємо:
-                    // випадковий ключ означає, що жоден токен не пройде перевірку (захищені маршрути дадуть 401).
                     loggers.CreateLogger("Gateway").LogWarning(
                         "Jwt:Key не задано — усі токени відхилятимуться. Задайте змінну середовища Jwt__Key (той самий ключ, що в Auth).");
                     key = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
@@ -45,7 +43,6 @@ public static class GatewayAuthentication
 
                 options.Events = new JwtBearerEvents
                 {
-                    // 401 — завжди ProblemDetails, без звернення до сервісів.
                     OnChallenge = async context =>
                     {
                         context.HandleResponse();

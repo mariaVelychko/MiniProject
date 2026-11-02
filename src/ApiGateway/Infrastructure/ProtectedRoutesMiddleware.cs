@@ -17,7 +17,6 @@ public sealed class ProtectedRoutesMiddleware(RequestDelegate next)
     {
         if (RequiresToken(ctx.Request) && ctx.User.Identity?.IsAuthenticated != true)
         {
-            // Схема "Bearer" = JwtBearerDefaults.AuthenticationScheme; відповідь формує OnChallenge (ProblemDetails 401).
             await ctx.ChallengeAsync("Bearer");
             return;
         }
@@ -27,13 +26,11 @@ public sealed class ProtectedRoutesMiddleware(RequestDelegate next)
 
     public static bool RequiresToken(HttpRequest request)
     {
-        // Профіль і користувачі — завжди персональні.
         if (request.Path.StartsWithSegments("/api/v1/users", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
 
-        // Каталог: читати може будь-хто, змінювати — лише з токеном (роль Admin перевіряє сам Catalog).
         return request.Path.StartsWithSegments("/api/v1/catalog", StringComparison.OrdinalIgnoreCase)
             && WriteMethods.Contains(request.Method, StringComparer.OrdinalIgnoreCase);
     }
